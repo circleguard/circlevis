@@ -75,12 +75,12 @@ class Renderer(QFrame):
             # TODO move temporary directory creation to slider probably, since
             # this logic is now duplicated here and in circlecore
             if library:
-                temp_dir = TemporaryDirectory()
-                self.beatmap = Library(temp_dir.name).lookup_by_id(beatmap_info.map_id, download=True)
-            else:
                 # TODO expose save as an option to the user somehow?
                 # might require a slider pr or just a change in approach for us
                 self.beatmap = library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
+            else:
+                temp_dir = TemporaryDirectory()
+                self.beatmap = Library(temp_dir.name).lookup_by_id(beatmap_info.map_id, download=True)
             self.playback_len = self.get_hit_endtime(self.beatmap.hit_objects[-1])
         else:
             self.playback_len = 0
