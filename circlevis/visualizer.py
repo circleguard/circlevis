@@ -655,7 +655,7 @@ class Interface(QWidget):
         self.renderer = Renderer(beatmap_info, replays, events, library, start_speed, paint_info)
         self.renderer.update_time_signal.connect(self.update_slider)
 
-        self.controls = VisualizerControls()
+        self.controls = VisualizerControls(start_speed)
         self.controls.pause_button.clicked.connect(self.pause)
         self.controls.play_reverse_button.clicked.connect(self.play_reverse)
         self.controls.play_normal_button.clicked.connect(self.play_normal)
