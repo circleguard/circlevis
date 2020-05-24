@@ -1,6 +1,6 @@
 from pathlib import Path
 
-ROOT_PATH = Path(__file__).parent.absolute()
+ROOT_PATH = Path(__file__).parent.parent.absolute()
 def resource_path(path):
     """
     Get the resource path for a given file.
