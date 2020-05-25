@@ -1,6 +1,7 @@
 from distutils.core import setup
 from setuptools import find_packages
 import re
+from glob import glob
 
 with open("README.md", "r") as readme:
     long_description = readme.read()
@@ -37,5 +38,10 @@ setup(
     install_requires=[
         "circleguard ~= 4.2.0",
         "slider ~= 0.2.1"
+    ],
+    data_files=[
+        # setup.py makes us specify each individual file otherwise. We want
+        # everything
+        ("resources", glob("resources/**"))
     ]
 )
