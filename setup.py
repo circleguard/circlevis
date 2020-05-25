@@ -35,7 +35,7 @@ setup(
     download_url = "https://github.com/circleguard/circlevis/tarball/v" + VERSION,
     packages=find_packages(),
     install_requires=[
-        "circleguard ~= 4.0.2",
+        "circleguard ~= 4.2.0",
         "slider ~= 0.2.1"
     ]
 )
