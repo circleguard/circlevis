@@ -532,7 +532,7 @@ class Renderer(QFrame):
             QPainter painter: The painter.
             Hitobj hitobj: A Hitobject.
         """
-        sliderbody = QPainterPath()
+
         current_time = self.clock.get_time()
         fade_out = max(0, ((current_time - self.get_hit_endtime(hitobj)) / self.hitwindow))
         opacity = min(1, ((current_time - (self.get_hit_time(hitobj) - self.preempt)) / self.fade_in))
@@ -545,6 +545,7 @@ class Renderer(QFrame):
         self.painter.setPen(PEN_GRAY)
         self.painter.setOpacity(opacity)
 
+        sliderbody = QPainterPath()
         sliderbody.moveTo(self.scaled_point(p.x, p.y))
         for i in hitobj.slider_body:
             sliderbody.lineTo(self.scaled_point(i.x, i.y))
