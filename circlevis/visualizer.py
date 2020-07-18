@@ -1,5 +1,5 @@
 import numpy as np
-from PyQt5.QtGui import QKeySequence
+from PyQt5.QtGui import QKeySequence, QPalette, QColor
 from PyQt5.QtWidgets import QShortcut, QMainWindow, QApplication
 from PyQt5.QtCore import Qt
 
@@ -60,3 +60,57 @@ class Visualizer(QMainWindow):
             # invalid time, don't seek
             return
         self.interface.renderer.seek_to(time)
+
+
+class VisualizerApp(QApplication):
+    def __init__(self, beatmap_info, replays=[], events=[], library=None, speeds=[1], start_speed=1, paint_info=True):
+        super().__init__([])
+        self.setStyle("Fusion")
+        self.setApplicationName("Circlevis")
+
+        self.beatmap_info = beatmap_info
+        self.replays = replays
+        self.events = events
+        self.library = library
+        self.speeds = speeds
+        self.start_speed = start_speed
+        self.paint_info = paint_info
+
+    def exec(self):
+        """
+        Displays the visualizer and enters into the event loop, which will block
+        the calling thread.
+        """
+        self.set_palette()
+        # we can't create this in ``__init__`` because we can't instantiate a
+        # ``QWidget`` before a ``QApplication``, so delay until here, which is
+        # all it's necessary for.
+        visualizer = Visualizer(self.beatmap_info, self.replays, self.events, self.library, self.speeds, self.start_speed, self.paint_info)
+        visualizer.show()
+        super().exec()
+
+    def set_palette(self):
+        accent = QColor(71, 174, 247)
+        dark_p = QPalette()
+
+        dark_p.setColor(QPalette.Window, QColor(53, 53, 53))
+        dark_p.setColor(QPalette.WindowText, Qt.white)
+        dark_p.setColor(QPalette.Base, QColor(25, 25, 25))
+        dark_p.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
+        dark_p.setColor(QPalette.ToolTipBase, QColor(53, 53, 53))
+        dark_p.setColor(QPalette.ToolTipText, Qt.white)
+        dark_p.setColor(QPalette.Text, Qt.white)
+        dark_p.setColor(QPalette.Button, QColor(53, 53, 53))
+        dark_p.setColor(QPalette.ButtonText, Qt.white)
+        dark_p.setColor(QPalette.BrightText, Qt.red)
+        dark_p.setColor(QPalette.Highlight, accent)
+        dark_p.setColor(QPalette.Inactive, QPalette.Highlight, Qt.lightGray)
+        dark_p.setColor(QPalette.HighlightedText, Qt.black)
+        dark_p.setColor(QPalette.Disabled, QPalette.Text, Qt.darkGray)
+        dark_p.setColor(QPalette.Disabled, QPalette.ButtonText, Qt.darkGray)
+        dark_p.setColor(QPalette.Disabled, QPalette.Highlight, Qt.darkGray)
+        dark_p.setColor(QPalette.Disabled, QPalette.Base, QColor(53, 53, 53))
+        dark_p.setColor(QPalette.Link, accent)
+        dark_p.setColor(QPalette.LinkVisited, accent)
+
+        self.setPalette(dark_p)
