@@ -63,7 +63,7 @@ class Visualizer(QMainWindow):
 
 
 class VisualizerApp(QApplication):
-    def __init__(self, beatmap_info, replays=[], events=[], library=None, speeds=[1], start_speed=1, paint_info=True):
+    def __init__(self, beatmap_info, replays=[], events=[], library=None, speeds=[0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0], start_speed=1, paint_info=True):
         super().__init__([])
         self.setStyle("Fusion")
         self.setApplicationName("Circlevis")
