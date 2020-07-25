@@ -37,7 +37,6 @@ app.exec()
 You can also visualize only a map, without any replay:
 
 ```python
-from circleguard import *
 from circlevis import VisualizerApp, BeatmapInfo
 
 bm = BeatmapInfo(map_id=509610)
