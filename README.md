@@ -26,7 +26,7 @@ cg.load(r)
 # from osu!'s servers) or a path to a .osu file (in which case circlevis will
 # load the beatmap from that file).
 # If you don't want any beatmap to be displayed, instantiate an empty BeatmapInfo
-# and (bm = BeatmapInfo()) and pass that to the visualizer.
+# (bm = BeatmapInfo()) and pass that to the visualizer.
 bm = BeatmapInfo(map_id=r.map_id)
 app = VisualizerApp(bm, replays=[r])
 # this calls qt's `exec` function, which shows the application and enters the
