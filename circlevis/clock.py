@@ -32,8 +32,9 @@ class Timer:
 
     def reset(self):
         self.time_counter = 0
-        self.paused = False
-        self.paused_at_run_time = None
+        # preserve paused state when resetting
+        self.paused = self.paused
+        self.paused_at_run_time = time.perf_counter_ns()
         self.last_run_time = time.perf_counter_ns()
         return self.get_time()
 

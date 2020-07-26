@@ -12,7 +12,7 @@ class Visualizer(QMainWindow):
     # than a few optional arguments, but multiple different objects with fewer
     # (and more relevant) arguments each. Eg maybe expose Renderer, which would
     # take speeds and start_speed.
-    def __init__(self, beatmap_info, replays=[], events=[], library=None, speeds=[1], start_speed=1, paint_info=True):
+    def __init__(self, beatmap_info, replays=[], events=[], library=None, speeds=[0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0], start_speed=1, paint_info=True):
         super().__init__()
 
         self.setAutoFillBackground(True)
@@ -59,7 +59,13 @@ class Visualizer(QMainWindow):
         except ValueError:
             # invalid time, don't seek
             return
-        self.interface.renderer.seek_to(time)
+        self.seek_to(time)
+
+    def seek_to(self, timestamp):
+        self.interface.renderer.seek_to(timestamp)
+
+    def pause(self):
+        self.interface.pause()
 
 
 class VisualizerApp(QApplication):
@@ -85,8 +91,8 @@ class VisualizerApp(QApplication):
         # we can't create this in ``__init__`` because we can't instantiate a
         # ``QWidget`` before a ``QApplication``, so delay until here, which is
         # all it's necessary for.
-        visualizer = Visualizer(self.beatmap_info, self.replays, self.events, self.library, self.speeds, self.start_speed, self.paint_info)
-        visualizer.show()
+        self.visualizer = Visualizer(self.beatmap_info, self.replays, self.events, self.library, self.speeds, self.start_speed, self.paint_info)
+        self.visualizer.show()
         super().exec()
 
     def set_palette(self):
@@ -114,3 +120,9 @@ class VisualizerApp(QApplication):
         dark_p.setColor(QPalette.LinkVisited, accent)
 
         self.setPalette(dark_p)
+
+    def pause(self):
+        self.visualizer.pause()
+
+    def seek_to(self, timestamp):
+        self.visualizer.seek_to(timestamp)

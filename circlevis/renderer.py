@@ -108,6 +108,13 @@ class Renderer(QFrame):
         else:
             self.is_loading = False
 
+        # if this is nonnull, when we finish loading sliders we will seek to
+        # this position. Set in ``seek_to`` if it is called when we're loading
+        self.seek_to_when_loaded = None
+        # whether the previous frame was a loading frame or not, used to
+        # determine when we came out of a loading state
+        self.previously_loading = False
+
         # replay stuff
         self.num_replays = len(replays)
         self.players = []
@@ -172,6 +179,18 @@ class Renderer(QFrame):
         and previous frame), while still pausing the automatic timer advancement.
         """
         if self.paused:
+            # ignore our paused state if we're still loading sliders, or else if
+            # we pause before the sliders are done loading we'll deadlock
+            # ourselves
+            if self.is_loading:
+                self.update()
+                return
+            # if we wanted to seek to somewhere while we were loaded, and we
+            # have just come out of a loading state, ignore paused and seek to
+            # that position
+            if self.previously_loading and self.seek_to_when_loaded:
+                self.seek_to(self.seek_to_when_loaded)
+                self.previously_loading = False
             return
         self.next_frame()
 
@@ -181,10 +200,12 @@ class Renderer(QFrame):
         """
         # just update the frame if currently loading
         if self.is_loading:
+            self.previously_loading = True
             self.update()
             return
 
         current_time = self.clock.get_time()
+        print(current_time, self.clock.paused)
         # if we're at the end of the track or are at the beginning of the track
         # (and thus are reversing), pause and dont update
         if current_time > self.playback_len or current_time < 0:
@@ -618,6 +639,10 @@ class Renderer(QFrame):
             Integer position: position to seek to in ms
         """
         self.clock.time_counter = position
+        # if we want to seek somewhere while we're loading sliders, we store
+        # that position so we can seek to it when loaded
+        if self.is_loading:
+            self.seek_to_when_loaded = position
         if self.paused:
             self.next_frame()
 
@@ -633,6 +658,7 @@ class Renderer(QFrame):
         """
         self.paused = True
         self.clock.pause()
+        print(self.clock.paused)
 
     def resume(self):
         """
