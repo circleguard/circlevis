@@ -67,6 +67,12 @@ class Visualizer(QMainWindow):
     def pause(self):
         self.interface.pause()
 
+    def force_pause(self):
+        self.interface.force_pause()
+
+    def force_unpause(self):
+        self.interface.force_unpause()
+
 
 class VisualizerApp(QApplication):
     def __init__(self, beatmap_info, replays=[], events=[], library=None, speeds=[0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0], start_speed=1, paint_info=True):
@@ -126,3 +132,9 @@ class VisualizerApp(QApplication):
 
     def seek_to(self, timestamp):
         self.visualizer.seek_to(timestamp)
+
+    def force_pause(self):
+        self.visualizer.force_pause()
+
+    def force_unpause(self):
+        self.visualizer.force_unpause()
