@@ -205,7 +205,6 @@ class Renderer(QFrame):
             return
 
         current_time = self.clock.get_time()
-        print(current_time, self.clock.paused)
         # if we're at the end of the track or are at the beginning of the track
         # (and thus are reversing), pause and dont update
         if current_time > self.playback_len or current_time < 0:
@@ -658,7 +657,6 @@ class Renderer(QFrame):
         """
         self.paused = True
         self.clock.pause()
-        print(self.clock.paused)
 
     def resume(self):
         """
