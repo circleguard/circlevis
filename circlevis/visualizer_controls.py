@@ -40,7 +40,7 @@ class VisualizerControls(QFrame):
         self.copy_to_clipboard_button = QPushButton()
         self.copy_to_clipboard_button.setIcon(QIcon(resource_path("clipboard.svg")))
         self.copy_to_clipboard_button.setFixedSize(20, 20)
-        self.copy_to_clipboard_button.setToolTip("Speed down")
+        self.copy_to_clipboard_button.setToolTip("Copy timestamped url to clipboard")
 
         self.speed_up_button = QPushButton()
         self.speed_up_button.setIcon(QIcon(resource_path("speed_up.png")))
