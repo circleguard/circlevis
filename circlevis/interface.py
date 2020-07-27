@@ -64,11 +64,11 @@ class Interface(QWidget):
     def force_pause(self):
         self.controls.set_paused_state(True)
         self.renderer.pause()
-    
+
     def force_unpause(self):
         self.controls.set_paused_state(False)
         self.renderer.resume()
-            
+
     def lower_speed(self):
         index = self.speeds.index(abs(self.renderer.clock.current_speed))
         if index == 0:
