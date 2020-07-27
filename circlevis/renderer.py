@@ -345,7 +345,7 @@ class Renderer(QFrame):
                 self.painter.drawRect(18, 27 - 9 + (11 * i), 10, 10)
                 self.painter.setOpacity(1)
                 self.painter.setPen(pen)
-                self.painter.drawText(31, 27 + (11 * i), f"{player.username} {player.mods.short_name()}: {int(player.xy[player.end_pos][0])}, {int(player.xy[player.end_pos][1])}")
+                self.painter.drawText(31, 27 + (11 * i), f"{player.username} {player.mods.short_name()}: {player.xy[player.end_pos][0]:.2f}, {player.xy[player.end_pos][1]:.2f}")
             self.painter.setPen(PEN_WHITE)
             if self.num_replays == 2:
                 try:
