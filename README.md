@@ -4,6 +4,15 @@ Circlevis is the replay viewer (aka visualizer) in [Circleguard](https://github.
 
 Circlevis is a [Qt](https://doc.qt.io/) widget, and will only work if you are using the Qt (or [pyqt](https://pypi.org/project/PyQt5/), as we are) GUI framwork.
 
+
+## Installation
+
+Circlevis can be installed from pip:
+
+```bash
+pip install circlevis
+```
+
 ## Usage
 
 Circlevis can be used in two ways:
