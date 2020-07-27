@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QVBoxLayout, QWidget
+from PyQt5.QtWidgets import QVBoxLayout, QWidget, QApplication
 
 from circlevis.renderer import Renderer
 from circlevis.visualizer_controls import VisualizerControls
@@ -7,6 +7,7 @@ class Interface(QWidget):
     def __init__(self, beatmap_info, replays, events, library, speeds, start_speed, paint_info):
         super().__init__()
         self.speeds = speeds
+        self.replays = replays
 
         self.renderer = Renderer(beatmap_info, replays, events, library, start_speed, paint_info)
         self.renderer.update_time_signal.connect(self.update_slider)
@@ -19,6 +20,7 @@ class Interface(QWidget):
         self.controls.previous_frame_button.clicked.connect(lambda: self.change_frame(reverse=True))
         self.controls.speed_up_button.clicked.connect(self.increase_speed)
         self.controls.speed_down_button.clicked.connect(self.lower_speed)
+        self.controls.copy_to_clipboard_button.clicked.connect(self.copy_to_clipboard)
         self.controls.slider.sliderMoved.connect(self.renderer.seek_to)
         self.controls.slider.setRange(0, self.renderer.playback_len)
 
@@ -84,3 +86,15 @@ class Interface(QWidget):
         speed = self.speeds[index + 1]
         self.controls.speed_label.setText(str(speed) + "x")
         self.update_speed(speed)
+
+    def copy_to_clipboard(self):
+        timestamp = int(self.renderer.clock.get_time())
+        clipboard = QApplication.clipboard()
+
+        # TODO accomodate arbitrary numbers of replays (including 0 replays)
+        if len(self.replays) == 2:
+            user_str = f"u={self.replays[0].user_id}&u2={self.replays[1].user_id}"
+        else:
+            user_str = f"u={self.replays[0].user_id}"
+
+        clipboard.setText(f"circleguard://m={self.replays[0].map_id}&{user_str}&t={timestamp}")
