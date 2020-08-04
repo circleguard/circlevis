@@ -66,7 +66,8 @@ class Renderer(QFrame):
 
         if beatmap_info.path:
             self.beatmap = Beatmap.from_path(beatmap_info.path)
-            self.playback_len = self.get_hit_endtime(self.beatmap.hit_objects[-1])
+            self.hit_objects = self.beatmap.hit_objects()
+            self.playback_len = self.get_hit_endtime(self.hit_objects[-1])
         elif beatmap_info.map_id:
             # library is nullable - None means we define our own (and don't care about saving)
             # TODO move temporary directory creation to slider probably, since
@@ -78,7 +79,8 @@ class Renderer(QFrame):
             else:
                 temp_dir = TemporaryDirectory()
                 self.beatmap = Library(temp_dir.name).lookup_by_id(beatmap_info.map_id, download=True)
-            self.playback_len = self.get_hit_endtime(self.beatmap.hit_objects[-1])
+            self.hit_objects = self.beatmap.hit_objects()
+            self.playback_len = self.get_hit_endtime(self.hit_objects[-1])
         else:
             self.playback_len = 0
 
@@ -100,7 +102,9 @@ class Renderer(QFrame):
             self.hitcircle_radius = circle_radius(self.beatmap.circle_size) - WIDTH_CIRCLE_BORDER / 2
             ## loading stuff
             self.is_loading = True
-            self.sliders_total = len(self.beatmap.hit_objects)
+            # not fully accurate, but good enough
+            self.num_hitobjects = len(self.hit_objects)
+            self.num_sliders = self.num_hitobjects
             self.sliders_current = 0
             self.thread = threading.Thread(target=self.process_sliders)
             self.thread.start()
@@ -228,7 +232,7 @@ class Renderer(QFrame):
         index = 0
         self.hitobjs = []
         while not found_all:
-            current_hitobj = self.beatmap.hit_objects[index]
+            current_hitobj = self.hit_objects[index]
             hit_t = current_hitobj.time.total_seconds() * 1000
             if isinstance(current_hitobj, Slider) or isinstance(current_hitobj, Spinner):
                 hit_end = self.get_hit_endtime(current_hitobj) + self.fade_in
@@ -238,7 +242,7 @@ class Renderer(QFrame):
                 self.hitobjs.append(current_hitobj)
             elif hit_t > current_time:
                 found_all = True
-            if index == len(self.beatmap.hit_objects) - 1:
+            if index == self.num_hitobjects - 1:
                 found_all = True
             index += 1
 
@@ -596,10 +600,10 @@ class Renderer(QFrame):
 
     def draw_loading_screen(self):
         self.painter.drawText(self.width() / 2 - 75, self.height() / 2 - 10, f"Calculating Sliders, please wait...")
-        self.draw_progressbar(int((self.sliders_current / self.sliders_total) * 100))
+        self.draw_progressbar(int((self.sliders_current / self.num_sliders) * 100))
 
     def process_sliders(self):
-        for i, hitobj in enumerate(self.beatmap.hit_objects):
+        for i, hitobj in enumerate(self.hit_objects):
             self.sliders_current = i
             if isinstance(hitobj, Slider):
                 steps = max(2, int((self.get_hit_endtime(hitobj) - self.get_hit_time(hitobj))/SLIDER_TICKRATE))
