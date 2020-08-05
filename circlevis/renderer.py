@@ -99,7 +99,10 @@ class Renderer(QFrame):
                 self.preempt = 1200 - 750 * (self.beatmap.approach_rate - 5) / 5
             self.hitwindow = od_to_ms(self.beatmap.overall_difficulty).hit_50
             self.fade_in = 400
-            self.hitcircle_radius = circle_radius(self.beatmap.circle_size) - WIDTH_CIRCLE_BORDER / 2
+            # for now we'll use the hr circle size if any replay has hr, TODO
+            # make this toggleable/an option somehow
+            use_hr = any([Mod.HR in replay.mods for replay in replays])
+            self.hitcircle_radius = circle_radius(self.beatmap.cs(hard_rock=use_hr)) - WIDTH_CIRCLE_BORDER / 2
             ## loading stuff
             self.is_loading = True
             # not fully accurate, but good enough
