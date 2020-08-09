@@ -18,7 +18,7 @@ from circlevis.player import Player
 
 WIDTH_LINE = 1
 WIDTH_CROSS = 2
-WIDTH_CIRCLE_BORDER = 8
+WIDTH_CIRCLE_BORDER = 6
 LENGTH_CROSS = 6
 FRAMES_ON_SCREEN = 15  # how many frames for each replay to draw on screen at a time
 
