@@ -12,32 +12,36 @@ class Visualizer(QMainWindow):
     # than a few optional arguments, but multiple different objects with fewer
     # (and more relevant) arguments each. Eg maybe expose Renderer, which would
     # take speeds and start_speed.
-    def __init__(self, beatmap_info, replays=[], events=[], library=None, speeds=[0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0], start_speed=1, paint_info=True):
+    def __init__(self, beatmap_info, replays=[], events=[], library=None, \
+        speeds=[0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0], start_speed=1,\
+        paint_info=True, statistic_functions=[]):
         super().__init__()
-
-        self.replays = replays
-        self.events = events
-        self.library = library
-        self.speeds = speeds
-        self.start_speed = start_speed
-        self.paint_info = paint_info
 
         self.setAutoFillBackground(True)
         self.setWindowTitle("Visualizer")
-        self.interface = Interface(beatmap_info, replays, events, library, speeds, start_speed, paint_info)
+        self.interface = Interface(beatmap_info, replays, events, library, \
+            speeds, start_speed, paint_info, statistic_functions)
         self.setCentralWidget(self.interface)
 
         QShortcut(QKeySequence(Qt.Key_Space), self, self.interface.pause)
-        QShortcut(QKeySequence(Qt.Key_Right), self, lambda: self.interface.change_frame(reverse=False))
-        QShortcut(QKeySequence(Qt.Key_Left), self, lambda: self.interface.change_frame(reverse=True))
-        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_Right), self, self.interface.play_normal)
-        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_Left), self, self.interface.play_reverse)
-        QShortcut(QKeySequence(Qt.Key_Up), self, self.interface.increase_speed)
-        QShortcut(QKeySequence(Qt.Key_Down), self, self.interface.lower_speed)
-        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_F11), self, lambda: self.interface.renderer.toggle_frametime)
+        QShortcut(QKeySequence(Qt.Key_Right), self, \
+            lambda: self.interface.change_frame(reverse=False))
+        QShortcut(QKeySequence(Qt.Key_Left), self, \
+            lambda: self.interface.change_frame(reverse=True))
+        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_Right), self, \
+            self.interface.play_normal)
+        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_Left), self, \
+            self.interface.play_reverse)
+        QShortcut(QKeySequence(Qt.Key_Up), self, \
+            self.interface.increase_speed)
+        QShortcut(QKeySequence(Qt.Key_Down), self, \
+            self.interface.lower_speed)
+        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_F11), self, \
+            lambda: self.interface.renderer.toggle_frametime)
         QShortcut(QKeySequence.FullScreen, self, self.toggle_fullscreen)
         QShortcut(QKeySequence(Qt.Key_F), self, self.toggle_fullscreen)
-        QShortcut(QKeySequence(Qt.ALT + Qt.Key_Return), self, self.toggle_fullscreen)
+        QShortcut(QKeySequence(Qt.ALT + Qt.Key_Return), self, \
+            self.toggle_fullscreen)
         QShortcut(QKeySequence(Qt.Key_Escape), self, self.exit_fullscreen)
         QShortcut(QKeySequence.Paste, self, self.seek_to_paste_contents)
 
@@ -82,7 +86,9 @@ class Visualizer(QMainWindow):
 
 
 class VisualizerApp(QApplication):
-    def __init__(self, beatmap_info, replays=[], events=[], library=None, speeds=[0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0], start_speed=1, paint_info=True):
+    def __init__(self, beatmap_info, replays=[], events=[], library=None, \
+        speeds=[0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0], start_speed=1,\
+        paint_info=True, statistic_functions=[]):
         super().__init__([])
         self.setStyle("Fusion")
         self.setApplicationName("Circlevis")
@@ -94,6 +100,7 @@ class VisualizerApp(QApplication):
         self.speeds = speeds
         self.start_speed = start_speed
         self.paint_info = paint_info
+        self.statistic_functions = statistic_functions
 
     def exec(self):
         """
@@ -104,7 +111,9 @@ class VisualizerApp(QApplication):
         # we can't create this in ``__init__`` because we can't instantiate a
         # ``QWidget`` before a ``QApplication``, so delay until here, which is
         # all it's necessary for.
-        self.visualizer = Visualizer(self.beatmap_info, self.replays, self.events, self.library, self.speeds, self.start_speed, self.paint_info)
+        self.visualizer = Visualizer(self.beatmap_info, self.replays, \
+            self.events, self.library, self.speeds, self.start_speed, \
+            self.paint_info, self.statistic_functions)
         self.visualizer.show()
         super().exec()
 

@@ -47,13 +47,16 @@ class Renderer(QFrame):
     update_time_signal = pyqtSignal(int)
     analyzer = RunTimeAnalyser(frame_buffer=FRAMETIME_FRAMES)
 
-    def __init__(self, beatmap_info, replays, events, library, start_speed, paint_info):
+    def __init__(self, beatmap_info, replays, events, library, start_speed, \
+        paint_info, statistic_functions):
         super().__init__()
         self.setMinimumSize(GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH*2, GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT*2)
         # list of timestamps to highlight the frames of in a different color
         self.events = events
         # whether to show some information about each player and their cursors
         self.should_paint_info = paint_info
+        # functions to display info for in the visualizer
+        self.statistic_functions = statistic_functions
         # whether we should paint the frametime graph
         self.paint_frametime = False
         self.painter = QPainter()
@@ -333,6 +336,10 @@ class Renderer(QFrame):
         Args:
            QPainter painter: The painter.
         """
+        # our current y coordinate for drawing info. Modified throughout this
+        # function
+        y = 15
+
         PEN_WHITE.setWidth(self.scaled_number(1))
         self.painter.setPen(PEN_WHITE)
         self.painter.setOpacity(0.25)
@@ -340,29 +347,40 @@ class Renderer(QFrame):
         PEN_WHITE.setWidth(1)
         self.painter.setPen(PEN_WHITE)
         self.painter.setOpacity(1)
-        self.painter.drawText(5, 15, f"Clock: {round(self.clock.get_time())} ms | Cursor count: {len(self.players)}")
+        self.painter.drawText(5, y, f"Clock: {round(self.clock.get_time())} ms | Cursor count: {len(self.players)}")
+
         if self.num_replays > 0:
-            for i, player in enumerate(self.players):
+            for player in self.players:
+                y += 13
                 pen = player.pen
                 self.painter.setPen(PEN_BLANK)
                 self.painter.setBrush(QBrush(pen.color()))
                 self.painter.setOpacity(1 if Key.M1 in Key(int(player.k[player.end_pos])) else 0.3)
-                self.painter.drawRect(5, 27 - 9 + (11 * i), 10, 10)
+                self.painter.drawRect(5, y - 9, 10, 10)
                 self.painter.setOpacity(1 if Key.M2 in Key(int(player.k[player.end_pos])) else 0.3)
-                self.painter.drawRect(18, 27 - 9 + (11 * i), 10, 10)
+                self.painter.drawRect(18, y - 9, 10, 10)
                 self.painter.setOpacity(1)
                 self.painter.setPen(pen)
-                self.painter.drawText(31, 27 + (11 * i), f"{player.username} {player.mods.short_name()}: {player.xy[player.end_pos][0]:.2f}, {player.xy[player.end_pos][1]:.2f}")
+                self.painter.drawText(31, y, f"{player.username} {player.mods.short_name()}: {player.xy[player.end_pos][0]:.2f}, {player.xy[player.end_pos][1]:.2f}")
+
             self.painter.setPen(PEN_WHITE)
             if self.num_replays == 2:
                 try:
+                    y += 13
                     player = self.players[1]
                     prev_player = self.players[0]
                     distance = math.sqrt(((prev_player.xy[prev_player.end_pos][0] - player.xy[player.end_pos][0]) ** 2) +
                                          ((prev_player.xy[prev_player.end_pos][1] - player.xy[player.end_pos][1]) ** 2))
-                    self.painter.drawText(5, 39 + (12 * 1), f"Distance {prev_player.username}-{player.username}: {int(distance)}px")
+                    self.painter.drawText(5, y, f"Distance {prev_player.username}-{player.username}: {int(distance)}px")
                 except IndexError: # Edge case where we only have data from one cursor
                     pass
+
+            for function in self.statistic_functions:
+                y += 13
+                xys = [player.xy for player in self.players]
+                indices = [player.end_pos for player in self.players]
+                result = function(xys, indices)
+                self.painter.drawText(5, y, f"{function.__name__}: {result}")
 
     def paint_frametime_graph(self):
         x_offset = self.width()

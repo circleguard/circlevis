@@ -4,12 +4,14 @@ from circlevis.renderer import Renderer
 from circlevis.visualizer_controls import VisualizerControls
 
 class Interface(QWidget):
-    def __init__(self, beatmap_info, replays, events, library, speeds, start_speed, paint_info):
+    def __init__(self, beatmap_info, replays, events, library, speeds, \
+        start_speed, paint_info, statistic_functions):
         super().__init__()
         self.speeds = speeds
         self.replays = replays
 
-        self.renderer = Renderer(beatmap_info, replays, events, library, start_speed, paint_info)
+        self.renderer = Renderer(beatmap_info, replays, events, library, \
+            start_speed, paint_info, statistic_functions)
         self.renderer.update_time_signal.connect(self.update_slider)
 
         self.controls = VisualizerControls(start_speed)
