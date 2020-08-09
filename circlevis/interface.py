@@ -23,8 +23,10 @@ class Interface(QWidget):
         self.controls.speed_up_button.clicked.connect(self.increase_speed)
         self.controls.speed_down_button.clicked.connect(self.lower_speed)
         self.controls.copy_to_clipboard_button.clicked.connect(self.copy_to_clipboard)
-        self.controls.slider.sliderMoved.connect(self.renderer.seek_to)
-        self.controls.slider.setRange(0, self.renderer.playback_len)
+        self.controls.time_slider.sliderMoved.connect(self.renderer.seek_to)
+        self.controls.time_slider.setRange(0, self.renderer.playback_len)
+
+        self.controls.raw_view_changed.connect(self.renderer.raw_view_changed)
 
         layout = QVBoxLayout()
         layout.addWidget(self.renderer)
@@ -39,7 +41,7 @@ class Interface(QWidget):
         self.update_speed(abs(self.renderer.clock.current_speed))
 
     def update_slider(self, value):
-        self.controls.slider.setValue(value)
+        self.controls.time_slider.setValue(value)
 
     def play_reverse(self):
         self.renderer.resume()

@@ -156,6 +156,9 @@ class Renderer(QFrame):
         self.setAutoFillBackground(True)
         self.setPalette(pal)
 
+        # settings that are changeable from the control's setting button
+        self.raw_view = False
+
     def resizeEvent(self, event):
         width = event.size().width() - GAMEPLAY_PADDING_WIDTH * 2
         height = event.size().height() - GAMEPLAY_PADDING_HEIGHT * 2
@@ -443,11 +446,15 @@ class Renderer(QFrame):
 
         Args:
            Float alpha: The alpha level from 0.0-1.0 to set the cross to.
-           List point: The X&Y position of the cross.
+           List point: The X and Y position of the cross.
            Boolean grey_out: Whether to grey out the cross or not.
            Boolean highlight: Whether to highlight the cross or not. This takes
                precedence over ``grey_out`` if both are set.
         """
+        # crosses can clutter the screen sometimes, don't draw them if raw view
+        # is on
+        if self.raw_view:
+            return
         prev_pen = None
         if highlight:
             prev_pen = self.painter.pen()
@@ -692,3 +699,8 @@ class Renderer(QFrame):
 
     def toggle_frametime(self):
         self.paint_frametime = not self.paint_frametime
+
+    def raw_view_changed(self, new_state):
+        self.raw_view = new_state
+        # redraw everything for the new raw view
+        self.update()
