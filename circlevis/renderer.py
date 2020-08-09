@@ -677,6 +677,12 @@ class Renderer(QFrame):
         if self.paused:
             self.next_frame()
 
+    def wheelEvent(self, event):
+        # support scrolling both vertically or horizontally, just respect
+        # whichever is greatest for that event
+        delta = max(event.pixelDelta().x(), event.pixelDelta().y(), key=abs)
+        self.seek_to(self.clock.time_counter - delta)
+
     def get_hit_endtime(self, hitobj):
         return hitobj.end_time.total_seconds() * 1000 if not isinstance(hitobj, Circle) else self.get_hit_time(hitobj)
 
