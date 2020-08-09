@@ -347,7 +347,7 @@ class Renderer(QFrame):
         PEN_WHITE.setWidth(1)
         self.painter.setPen(PEN_WHITE)
         self.painter.setOpacity(1)
-        self.painter.drawText(5, y, f"Clock: {round(self.clock.get_time())} ms | Cursor count: {len(self.players)}")
+        self.painter.drawText(5, y, f"Clock: {round(self.clock.get_time())} ms")
 
         if self.num_replays > 0:
             for player in self.players:
