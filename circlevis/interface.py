@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QVBoxLayout, QWidget, QApplication
 
 from circlevis.renderer import Renderer
-from circlevis.visualizer_controls import VisualizerControls
+from circlevis.controls import VisualizerControls
 
 class Interface(QWidget):
     def __init__(self, beatmap_info, replays, events, library, speeds, \
