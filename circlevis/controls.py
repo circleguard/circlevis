@@ -50,6 +50,7 @@ class VisualizerControls(QFrame):
         self.speed_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
 
         self.settings_button = QPushButton()
+        self.settings_button.setIcon(QIcon(resource_path("settings_wheel")))
         self.settings_button.setFixedSize(20, 20)
         self.settings_button.setToolTip("Open settings")
         self.settings_button.clicked.connect(self.settings_button_clicked)
