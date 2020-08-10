@@ -20,7 +20,6 @@ WIDTH_LINE = 1
 WIDTH_CROSS = 2
 WIDTH_CIRCLE_BORDER = 6
 LENGTH_CROSS = 6
-FRAMES_ON_SCREEN = 15  # how many frames for each replay to draw on screen at a time
 
 PEN_WHITE = QPen(QColor(200, 200, 200))
 PEN_GRAY = QPen(QColor(75, 75, 75))
@@ -158,6 +157,9 @@ class Renderer(QFrame):
 
         # settings that are changeable from the control's setting button
         self.raw_view = False
+        self.draw_approach_circles = True
+        # how many frames for each replay to draw on screen at a time
+        self.num_frames_on_screen = 15
 
     def resizeEvent(self, event):
         width = event.size().width() - GAMEPLAY_PADDING_WIDTH * 2
@@ -226,7 +228,7 @@ class Renderer(QFrame):
 
         for player in self.players:
             player.end_pos = np.searchsorted(player.t, current_time, "right") - 1
-            player.start_pos = player.end_pos - FRAMES_ON_SCREEN if player.end_pos >= FRAMES_ON_SCREEN else 0
+            player.start_pos = player.end_pos - self.num_frames_on_screen if player.end_pos >= self.num_frames_on_screen else 0
 
         if self.has_beatmap:
             self.get_hitobjects()
@@ -299,7 +301,7 @@ class Renderer(QFrame):
         Arguments:
             Player player: player to draw the cursor of.
         """
-        alpha_step = 1 / FRAMES_ON_SCREEN
+        alpha_step = 1 / self.num_frames_on_screen
         pen = player.pen
         pen.setWidth(self.scaled_number(WIDTH_LINE))
         PEN_HIGHLIGHT.setWidth(self.scaled_number(WIDTH_LINE))
@@ -549,6 +551,8 @@ class Renderer(QFrame):
             QPainter painter: The painter.
             Hitobj hitobj: A Hitobject.
         """
+        if not self.draw_approach_circles:
+            return
         current_time = self.clock.get_time()
         if self.get_hit_time(hitobj) - current_time < 0:
             return
@@ -709,4 +713,12 @@ class Renderer(QFrame):
     def raw_view_changed(self, new_state):
         self.raw_view = new_state
         # redraw everything for the new raw view
+        self.update()
+
+    def approach_circles_changed(self, new_state):
+        self.draw_approach_circles = new_state
+        self.update()
+
+    def num_frames_changed(self, new_value):
+        self.num_frames_on_screen = new_value
         self.update()

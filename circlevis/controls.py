@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QFrame, QPushButton, QSlider, QGridLayout, QLabel,
-    QVBoxLayout, QCheckBox, QHBoxLayout)
+    QVBoxLayout, QCheckBox, QHBoxLayout, QSpinBox)
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, pyqtSignal
 
@@ -7,6 +7,8 @@ from circlevis.utils import resource_path
 
 class VisualizerControls(QFrame):
     raw_view_changed = pyqtSignal(bool)
+    approach_circles_changed = pyqtSignal(bool)
+    num_frames_changed = pyqtSignal(int)
 
     def __init__(self, speed):
         super().__init__()
@@ -57,6 +59,8 @@ class VisualizerControls(QFrame):
 
         self.settings_popup = SettingsPopup()
         self.settings_popup.raw_view_changed.connect(self.raw_view_changed)
+        self.settings_popup.approach_circles_changed.connect(self.approach_circles_changed)
+        self.settings_popup.num_frames_changed.connect(self.num_frames_changed)
 
         self.speed_up_button = QPushButton()
         self.speed_up_button.setIcon(QIcon(resource_path("speed_up.png")))
@@ -90,44 +94,58 @@ class VisualizerControls(QFrame):
 
     def settings_button_clicked(self):
         global_pos = self.mapToGlobal(self.settings_button.pos())
-        self.settings_popup.setGeometry(global_pos.x() - (SettingsPopup.WIDTH / 2),\
-            global_pos.y() - ((25 / 2) + SettingsPopup.HEIGHT), SettingsPopup.WIDTH,\
-            SettingsPopup.HEIGHT)
+        popup_height = self.settings_popup.size().height()
+        popup_width = self.settings_popup.size().width()
+        self.settings_popup.setGeometry(global_pos.x() - (popup_width / 2), \
+            global_pos.y() - popup_height, popup_width, popup_height)
         self.settings_popup.show()
 
 
 class SettingsPopup(QFrame):
     raw_view_changed = pyqtSignal(bool)
-
-    WIDTH = 200
-    HEIGHT = 60
+    approach_circles_changed = pyqtSignal(bool)
+    num_frames_changed = pyqtSignal(int)
 
     def __init__(self):
         super().__init__()
+        # we're technically a window, but we don't want to be shown as such to
+        # the user, so hide our window features (like the top bar)
         self.setWindowFlags(Qt.Popup)
-        self.raw_view_checkbox = CheckboxSetting("Raw view:")
-        self.raw_view_checkbox.state_changed.connect(self.raw_view_changed)
-        self.settings_slider = QSlider(Qt.Horizontal)
+
+        self.setMaximumWidth(300)
+        self.setMaximumHeight(100)
+
+        self.raw_view_cb = CheckboxSetting("Raw view:", False)
+        self.raw_view_cb.state_changed.connect(self.raw_view_changed)
+
+        self.approach_circles_cb = CheckboxSetting("Approach circles:", True)
+        self.approach_circles_cb.state_changed.connect(self.approach_circles_changed)
+
+        self.num_frames_slider = SliderSetting("Num. frames:", 15, 1, 30)
+        self.num_frames_slider.value_changed.connect(self.num_frames_changed)
 
         layout = QVBoxLayout()
-        layout.addWidget(self.raw_view_checkbox)
-        layout.addWidget(self.settings_slider)
+        layout.addWidget(self.raw_view_cb)
+        layout.addWidget(self.approach_circles_cb)
+        layout.addWidget(self.num_frames_slider)
         self.setLayout(layout)
 
 
 class CheckboxSetting(QFrame):
     state_changed = pyqtSignal(bool)
 
-    def __init__(self, text):
+    def __init__(self, text, start_state):
         super().__init__()
 
         label = QLabel(text)
         self.checkbox = QCheckBox()
+        self.checkbox.setChecked(start_state)
         self.checkbox.stateChanged.connect(self._state_changed)
 
         layout = QHBoxLayout()
         layout.addWidget(label, 3)
         layout.addWidget(self.checkbox, 1)
+        layout.setContentsMargins(0, 3, 0, 3)
         self.setLayout(layout)
 
     def checked(self):
@@ -136,3 +154,35 @@ class CheckboxSetting(QFrame):
     def _state_changed(self, state):
         # convert from qt's CheckState enum to a bool
         self.state_changed.emit(state == Qt.CheckState.Checked) # pylint: disable=no-member
+
+
+class SliderSetting(QFrame):
+    value_changed = pyqtSignal(int)
+
+    def __init__(self, text, start_value, min_, max_):
+        super().__init__()
+
+        label = QLabel(text)
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setValue(start_value)
+        self.slider.setRange(min_, max_)
+        self.slider.valueChanged.connect(self._value_changed)
+
+        self.spinbox = QSpinBox()
+        self.spinbox.setRange(min_, max_)
+        self.spinbox.setSingleStep(1)
+        self.spinbox.setValue(start_value)
+        self.spinbox.valueChanged.connect(self._value_changed)
+
+        layout = QHBoxLayout()
+        layout.addWidget(label, 1)
+        layout.addWidget(self.slider, 2)
+        layout.addWidget(self.spinbox, 1)
+        layout.setContentsMargins(0, 3, 0, 3)
+        self.setLayout(layout)
+
+    def _value_changed(self, new_value):
+        # keep slider and spinbox in sync
+        self.spinbox.setValue(new_value)
+        self.slider.setValue(new_value)
+        self.value_changed.emit(new_value)
