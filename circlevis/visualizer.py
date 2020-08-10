@@ -45,6 +45,14 @@ class Visualizer(QMainWindow):
         QShortcut(QKeySequence(Qt.Key_Escape), self, self.exit_fullscreen)
         QShortcut(QKeySequence.Paste, self, self.seek_to_paste_contents)
 
+        # ugly hack to make the window 20% larger, we can't change gameplay
+        # height because that's baked in as the osu! gameplay height and is
+        # not meant to be changed to increase the window size (same with width).
+        from .renderer import (GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT,
+            GAMEPLAY_PADDING_WIDTH, GAMEPLAY_PADDING_HEIGHT)
+        self.resize((GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH * 2) * 1.2, \
+                    (GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT * 2) * 1.2)
+
     def closeEvent(self, event):
         super().closeEvent(event)
         self.interface.renderer.timer.stop()
