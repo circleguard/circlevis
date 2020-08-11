@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 
 import numpy as np
 from PyQt5.QtGui import QBrush, QPen, QColor, QPalette, QPainter, QPainterPath
-from PyQt5.QtWidgets import QFrame
+from PyQt5.QtWidgets import QFrame, QGraphicsView, QGraphicsScene
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPointF, QRectF
 from slider import Beatmap, Library
 from slider.beatmap import Circle, Slider, Spinner
@@ -42,7 +42,7 @@ FRAMETIME_FRAMES = 120
 SLIDER_TICKRATE = 50
 
 
-class Renderer(QFrame):
+class Renderer(QGraphicsView):
     update_time_signal = pyqtSignal(int)
     analyzer = RunTimeAnalyser(frame_buffer=FRAMETIME_FRAMES)
 
@@ -161,6 +161,16 @@ class Renderer(QFrame):
         # how many frames for each replay to draw on screen at a time
         self.num_frames_on_screen = 15
 
+        # TODO test if necessary? doesn't appear to make a difference on mac,
+        # might on windows
+        self.setRenderHint(QPainter.TextAntialiasing, True)
+        self.setRenderHint(QPainter.Antialiasing, True)
+
+        self.scene = QGraphicsScene()
+        self.setScene(self.scene)
+        self.scene.addText("ssadasdaweadbvafrd")
+        self.show()
+
     def resizeEvent(self, event):
         width = event.size().width() - GAMEPLAY_PADDING_WIDTH * 2
         height = event.size().height() - GAMEPLAY_PADDING_HEIGHT * 2
@@ -261,9 +271,9 @@ class Renderer(QFrame):
         """
         Called whenever self.update() is called. Draws all cursors and Hitobjects
         """
+        super().paintEvent(event)
+        return
         self.painter.begin(self)
-        self.painter.setRenderHint(QPainter.TextAntialiasing, True)
-        self.painter.setRenderHint(QPainter.Antialiasing, True)
         self.painter.setPen(PEN_WHITE)
         _pen = self.painter.pen()
         # loading screen
