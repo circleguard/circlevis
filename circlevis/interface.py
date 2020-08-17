@@ -29,6 +29,7 @@ class Interface(QWidget):
         self.controls.raw_view_changed.connect(self.renderer.raw_view_changed)
         self.controls.approach_circles_changed.connect(self.renderer.approach_circles_changed)
         self.controls.num_frames_changed.connect(self.renderer.num_frames_changed)
+        self.controls.zoom_button_clicked.connect(self.renderer.zoom_button_clicked)
 
 
         layout = QVBoxLayout()

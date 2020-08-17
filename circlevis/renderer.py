@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 
 import numpy as np
 from PyQt5.QtGui import QBrush, QPen, QColor, QPalette, QPainter, QPainterPath
-from PyQt5.QtWidgets import QFrame
+from PyQt5.QtWidgets import QFrame, QApplication
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPointF, QRectF
 from slider import Beatmap, Library
 from slider.beatmap import Circle, Slider, Spinner
@@ -130,7 +130,7 @@ class Renderer(QFrame):
         for i, replay in enumerate(replays):
             self.players.append(
                 Player(replay=replay,
-                       pen=QPen(QColor().fromHslF(i / self.num_replays, 0.75, 0.5)),))
+                       pen=QPen(QColor().fromHslF(i / self.num_replays, 0.75, 0.5))))
         self.playback_len = max(max(player.t) for player in self.players) if self.num_replays > 0 else self.playback_len
         # flip all replays with hr
         for player in self.players:
@@ -155,6 +155,31 @@ class Renderer(QFrame):
         self.setAutoFillBackground(True)
         self.setPalette(pal)
 
+        # where we've started to draw the box to zoom to
+        self.zoom_start_pos = None
+        # where we currently are in a zoom, a rect is drawn using this and
+        # `zoom_start_pos` as the top left and bottom right points
+        self.zoom_current_pos = None
+        # whether we will start a zoom on click+drag (a specific button has to
+        # be clicked first)
+        self.can_start_zoom = False
+        # whether we're currently in the mouse held state (ie still dragging the
+        # zoom box)
+        self.is_zooming = False
+        # whether we should respect the zoom coordinate system (ie whether we're
+        # actually zoomed or not)
+        self.use_zoomed_coord_system = False
+        # where our new coordinate system dictated by the zooming beings and
+        # ends. We need this to perform arbitrary scaling and positioning of
+        # everything drawn on screen.
+        # These values are relative to the gameplay border - that is, (0,0)
+        # indicates the drag started at the top left of the gameplay area,
+        # not of the entire widget.
+        self.zoom_coord_system_start = None
+        self.zoom_coord_system_end = None
+        # TODO implement
+        self.zoomed_scale = 1
+
         # settings that are changeable from the control's setting button
         self.raw_view = False
         self.draw_approach_circles = True
@@ -175,17 +200,38 @@ class Renderer(QFrame):
             self.y_offset = 0
             self.x_offset = (width - GAMEPLAY_WIDTH * y_scale) / 2
 
-    def _x(self, position):
-        return self.x_offset + GAMEPLAY_PADDING_WIDTH + self.scaled_number(position)
+    def _x(self, position, debug=False):
+        pos = position
+        position = self.scaled_number(position)
+        if self.use_zoomed_coord_system:
+            start_x = self.zoom_coord_system_start.x() - GAMEPLAY_PADDING_WIDTH
+            end_x = self.zoom_coord_system_end.x() - GAMEPLAY_PADDING_WIDTH
+            position = ((position - start_x) / (end_x - start_x)) * GAMEPLAY_WIDTH
+            position = self.x_offset + GAMEPLAY_PADDING_WIDTH + position
+            if debug:
+                print(f"x coord {pos} -> {position:.2f}", start_x, end_x)
+            return position
+        return self.x_offset + GAMEPLAY_PADDING_WIDTH + position
 
-    def _y(self, position):
-        return self.y_offset + GAMEPLAY_PADDING_HEIGHT + self.scaled_number(position)
+    def _y(self, position, debug=False):
+        pos = position
+        position = self.scaled_number(position)
+        if self.use_zoomed_coord_system:
+            start_y = self.zoom_coord_system_start.y() - GAMEPLAY_PADDING_HEIGHT
+            end_y = self.zoom_coord_system_end.y() - GAMEPLAY_PADDING_HEIGHT
+            position = ((position - start_y) / (end_y - start_y)) * GAMEPLAY_HEIGHT
+            position = self.y_offset + GAMEPLAY_PADDING_HEIGHT + position
+            if debug:
+                print(f"y coord {pos} -> {position:.2f}", start_y, end_y)
+                print()
+            return position
+        return self.y_offset + GAMEPLAY_PADDING_HEIGHT + position
 
-    def scaled_point(self, x, y):
-        return QPointF(self._x(x), self._y(y))
+    def scaled_point(self, x, y, debug=False):
+        return QPointF(self._x(x, debug=debug), self._y(y, debug=debug))
 
     def scaled_number(self, n):
-        return n * self.scale
+        return n * self.scale * self.zoomed_scale
 
     def next_frame_from_timer(self):
         """
@@ -235,7 +281,7 @@ class Renderer(QFrame):
         self.update_time_signal.emit(current_time)
         self.update()
 
-    @analyzer.track
+    # @analyzer.track
     def get_hitobjects(self):
         # get current hitobjects
         current_time = self.clock.get_time()
@@ -277,23 +323,38 @@ class Renderer(QFrame):
                 self.clock.reset()
                 self.painter.end()
                 return
-        # beatmap
-        if self.has_beatmap:
-            self.paint_beatmap()
-        # cursors
-        for player in self.players:
-            self.paint_cursor(player)
-        # other info
-        self.painter.setPen(_pen)
+
+        # info
         if self.should_paint_info:
             self.paint_info()
+        self.paint_zoom_box()
         if self.paint_frametime:
             self.analyzer.new_frame()
             self.paint_frametime_graph()
         self.analyzer.enabled = self.paint_frametime
+
+        self.painter.setBrush(BRUSH_BLANK)
+        if self.use_zoomed_coord_system:
+            # if we're zoomed, don't paint the replay outside of the gameplay
+            # area, or else we'll draw into the padding (which isn't what the
+            # user zoomed into and causes confusion).
+            clip_rect = QRectF(GAMEPLAY_PADDING_WIDTH, GAMEPLAY_PADDING_HEIGHT, GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT)
+            self.painter.setClipRect(clip_rect)
+
+        # play area
+        self.paint_play_area()
+
+        # beatmap
+        if self.has_beatmap:
+            self.paint_beatmap()
+
+        # cursors
+        for player in self.players:
+            self.paint_cursor(player)
+
         self.painter.end()
 
-    @analyzer.track
+    # @analyzer.track
     def paint_cursor(self, player):
         """
         Draws a cursor.
@@ -329,14 +390,20 @@ class Renderer(QFrame):
         # reset alpha
         self.painter.setOpacity(1)
 
+    def paint_play_area(self):
+        PEN_WHITE.setWidth(self.scaled_number(1))
+        self.painter.setPen(PEN_WHITE)
+        self.painter.setOpacity(0.25)
+        self.painter.drawRect(QRectF(self.scaled_point(0, 0, debug=True), self.scaled_point(GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT, debug=True)))
+
     def paint_beatmap(self):
         for hitobj in self.hitobjs[::-1]:
             self.draw_hitobject(hitobj)
 
-    @analyzer.track
+    # @analyzer.track
     def paint_info(self):
         """
-        Draws various Information.
+        Draws various replay info.
 
         Args:
            QPainter painter: The painter.
@@ -344,11 +411,6 @@ class Renderer(QFrame):
         # our current y coordinate for drawing info. Modified throughout this
         # function
         y = 15
-
-        PEN_WHITE.setWidth(self.scaled_number(1))
-        self.painter.setPen(PEN_WHITE)
-        self.painter.setOpacity(0.25)
-        self.painter.drawRect(QRectF(self.scaled_point(0, 0), self.scaled_point(GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT)))
         PEN_WHITE.setWidth(1)
         self.painter.setPen(PEN_WHITE)
         self.painter.setOpacity(1)
@@ -496,7 +558,7 @@ class Renderer(QFrame):
         if isinstance(hitobj, Spinner):
             self.draw_spinner(hitobj)
 
-    @analyzer.track
+    # @analyzer.track
     def draw_hitcircle(self, hitobj):
         """
         Draws Hitcircle.
@@ -518,7 +580,7 @@ class Renderer(QFrame):
         self.painter.drawEllipse(self.scaled_point(p.x, p.y), self.scaled_number(self.hitcircle_radius), self.scaled_number(self.hitcircle_radius))
         self.painter.setBrush(BRUSH_BLANK)
 
-    @analyzer.track
+    # @analyzer.track
     def draw_spinner(self, hitobj):
         """
         Draws Spinner.
@@ -542,7 +604,7 @@ class Renderer(QFrame):
         self.painter.setOpacity(opacity)
         self.painter.drawEllipse(self.scaled_point(GAMEPLAY_WIDTH / 2, GAMEPLAY_HEIGHT / 2), self.scaled_number(radius), self.scaled_number(radius))
 
-    @analyzer.track
+    # @analyzer.track
     def draw_approachcircle(self, hitobj):
         """
         Draws Approachcircle.
@@ -567,7 +629,7 @@ class Renderer(QFrame):
         self.painter.setOpacity(opacity)
         self.painter.drawEllipse(self.scaled_point(p.x, p.y), self.scaled_number(radius), self.scaled_number(radius))
 
-    @analyzer.track
+    # @analyzer.track
     def draw_slider(self, hitobj):
         """
         Draws sliderbody and hitcircle & approachcircle if needed
@@ -641,6 +703,17 @@ class Renderer(QFrame):
                 steps = max(2, int((self.get_hit_endtime(hitobj) - self.get_hit_time(hitobj))/SLIDER_TICKRATE))
                 hitobj.slider_body = [hitobj.curve(i / steps) for i in range(steps + 1)]
 
+    def paint_zoom_box(self):
+        # if we're not currently zooming, don't draw anything. Have to check
+        # both because at the very beginning of a zoom, only start_pos is set
+        if not self.is_zooming:
+            return
+        PEN_WHITE.setWidth(self.scaled_number(1))
+        self.painter.setPen(PEN_WHITE)
+        self.painter.setBrush(BRUSH_BLANK)
+        self.painter.drawRect(QRectF(self.zoom_start_pos, self.zoom_current_pos))
+
+
     def search_nearest_frame(self, reverse=False):
         """
         Args:
@@ -687,6 +760,59 @@ class Renderer(QFrame):
         delta = max(event.pixelDelta().x(), event.pixelDelta().y(), key=abs)
         self.seek_to(self.clock.time_counter + delta)
 
+    def mouseMoveEvent(self, event):
+        if not self.is_zooming:
+            return
+        # ensure the aspect ratio of the zoom is always the same as gameplay,
+        # or hitobjects get skewed
+
+        x = event.pos().x() - self.zoom_start_pos.x()
+        y = event.pos().y() - self.zoom_start_pos.y()
+        # aka 3/4
+        aspect_ratio = GAMEPLAY_HEIGHT / GAMEPLAY_WIDTH
+        # avoid divide by zero when start pos == current pos
+        if x == 0 or y == 0:
+            pass
+        elif y / x > aspect_ratio:
+            # y is the one too large for the aspect ratio, need to cap it
+            y = x * aspect_ratio
+        else:
+            # else x is the one too large (or the aspect ratio is perfect)
+            x = y / aspect_ratio
+        self.zoom_current_pos = QPointF(x + self.zoom_start_pos.x(), y + self.zoom_start_pos.y())
+        # need to update to draw the new box
+        self.update()
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.RightButton:
+            self.reset_zoom()
+            return
+        if not self.can_start_zoom:
+            return
+        self.zoom_start_pos = event.pos()
+        self.is_zooming = True
+
+    def mouseReleaseEvent(self, event):
+        if not self.is_zooming:
+            return
+        QApplication.restoreOverrideCursor()
+        # reset zooming states
+        self.can_start_zoom = False
+        self.is_zooming = False
+        self.use_zoomed_coord_system = True
+        self.zoom_coord_system_start = self.zoom_start_pos
+        self.zoom_coord_system_end = event.pos()
+
+        # our zoom x and y are synced in aspect ratio thanks to #mouseMoveEvent,
+        # so we only need to use one coordinate here to determine our zoom scale
+        self.zoomed_scale = GAMEPLAY_WIDTH / (self.zoom_coord_system_end.x() - self.zoom_coord_system_start.x())
+        self.update()
+
+    def reset_zoom(self):
+        self.use_zoomed_coord_system = False
+        self.zoomed_scale = 1
+        self.update()
+
     def get_hit_endtime(self, hitobj):
         return hitobj.end_time.total_seconds() * 1000 if not isinstance(hitobj, Circle) else self.get_hit_time(hitobj)
 
@@ -722,3 +848,7 @@ class Renderer(QFrame):
     def num_frames_changed(self, new_value):
         self.num_frames_on_screen = new_value
         self.update()
+
+    def zoom_button_clicked(self):
+        QApplication.setOverrideCursor(Qt.CrossCursor)
+        self.can_start_zoom = True

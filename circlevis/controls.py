@@ -9,6 +9,7 @@ class VisualizerControls(QFrame):
     raw_view_changed = pyqtSignal(bool)
     approach_circles_changed = pyqtSignal(bool)
     num_frames_changed = pyqtSignal(int)
+    zoom_button_clicked = pyqtSignal()
 
     def __init__(self, speed):
         super().__init__()
@@ -51,6 +52,12 @@ class VisualizerControls(QFrame):
         self.speed_label.setFixedSize(40, 20)
         self.speed_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
 
+        self.zoom_button = QPushButton()
+        self.zoom_button.setIcon(QIcon(resource_path("settings_wheel")))
+        self.zoom_button.setFixedSize(20, 20)
+        self.zoom_button.setToolTip("Zoom to selection")
+        self.zoom_button.clicked.connect(self.zoom_button_clicked)
+
         self.settings_button = QPushButton()
         self.settings_button.setIcon(QIcon(resource_path("settings_wheel")))
         self.settings_button.setFixedSize(20, 20)
@@ -81,9 +88,10 @@ class VisualizerControls(QFrame):
         layout.addWidget(self.copy_to_clipboard_button, 16, 5, 1, 1)
         layout.addWidget(self.time_slider, 16, 6, 1, 9)
         layout.addWidget(self.speed_label, 16, 15, 1, 1)
-        layout.addWidget(self.settings_button, 16, 16, 1, 1)
-        layout.addWidget(self.speed_down_button, 16, 17, 1, 1)
-        layout.addWidget(self.speed_up_button, 16, 18, 1, 1)
+        layout.addWidget(self.zoom_button, 16, 16, 1, 1)
+        layout.addWidget(self.settings_button, 16, 17, 1, 1)
+        layout.addWidget(self.speed_down_button, 16, 18, 1, 1)
+        layout.addWidget(self.speed_up_button, 16, 19, 1, 1)
         layout.setContentsMargins(5, 0, 5, 5)
         self.setLayout(layout)
         self.setFixedHeight(25)

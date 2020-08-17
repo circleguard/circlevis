@@ -48,10 +48,10 @@ class Visualizer(QMainWindow):
         # ugly hack to make the window 20% larger, we can't change gameplay
         # height because that's baked in as the osu! gameplay height and is
         # not meant to be changed to increase the window size (same with width).
-        from .renderer import (GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT,
-            GAMEPLAY_PADDING_WIDTH, GAMEPLAY_PADDING_HEIGHT)
-        self.resize((GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH * 2) * 1.2, \
-                    (GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT * 2) * 1.2)
+        # from .renderer import (GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT,
+        #     GAMEPLAY_PADDING_WIDTH, GAMEPLAY_PADDING_HEIGHT)
+        # self.resize((GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH * 2) * 1.2, \
+        #             (GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT * 2) * 1.2)
 
     def closeEvent(self, event):
         super().closeEvent(event)
