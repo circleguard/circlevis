@@ -206,7 +206,7 @@ class Renderer(QFrame):
         if self.use_zoomed_coord_system:
             start_x = self.zoom_coord_system_start.x() - GAMEPLAY_PADDING_WIDTH
             end_x = self.zoom_coord_system_end.x() - GAMEPLAY_PADDING_WIDTH
-            position = ((position - start_x) / (end_x - start_x)) * GAMEPLAY_WIDTH
+            position = ((pos - start_x) / (end_x - start_x)) * GAMEPLAY_WIDTH
             position = self.x_offset + GAMEPLAY_PADDING_WIDTH + position
             if debug:
                 print(f"x coord {pos} -> {position:.2f}", start_x, end_x)
@@ -219,7 +219,7 @@ class Renderer(QFrame):
         if self.use_zoomed_coord_system:
             start_y = self.zoom_coord_system_start.y() - GAMEPLAY_PADDING_HEIGHT
             end_y = self.zoom_coord_system_end.y() - GAMEPLAY_PADDING_HEIGHT
-            position = ((position - start_y) / (end_y - start_y)) * GAMEPLAY_HEIGHT
+            position = ((pos - start_y) / (end_y - start_y)) * GAMEPLAY_HEIGHT
             position = self.y_offset + GAMEPLAY_PADDING_HEIGHT + position
             if debug:
                 print(f"y coord {pos} -> {position:.2f}", start_y, end_y)
@@ -228,6 +228,8 @@ class Renderer(QFrame):
         return self.y_offset + GAMEPLAY_PADDING_HEIGHT + position
 
     def scaled_point(self, x, y, debug=False):
+        if round(x, 2) == 115.56 and y == 260:
+            debug = True
         return QPointF(self._x(x, debug=debug), self._y(y, debug=debug))
 
     def scaled_number(self, n):
@@ -528,7 +530,7 @@ class Renderer(QFrame):
             prev_pen = self.painter.pen()
             PEN_GREY_INACTIVE.setWidth(self.scaled_number(WIDTH_CROSS))
             self.painter.setPen(PEN_GREY_INACTIVE)
-        half_width = LENGTH_CROSS/2
+        half_width = LENGTH_CROSS / 2
         x = point[0]
         y = point[1]
         x1 = x + half_width
@@ -805,7 +807,7 @@ class Renderer(QFrame):
 
         # our zoom x and y are synced in aspect ratio thanks to #mouseMoveEvent,
         # so we only need to use one coordinate here to determine our zoom scale
-        self.zoomed_scale = GAMEPLAY_WIDTH / (self.zoom_coord_system_end.x() - self.zoom_coord_system_start.x())
+        self.zoomed_scale = GAMEPLAY_WIDTH / abs(self.zoom_coord_system_end.x() - self.zoom_coord_system_start.x())
         self.update()
 
     def reset_zoom(self):
