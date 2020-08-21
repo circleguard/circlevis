@@ -106,7 +106,7 @@ class Renderer(QFrame):
             # for now we'll use the hr circle size if any replay has hr, TODO
             # make this toggleable/an option somehow
             use_hr = any([Mod.HR in replay.mods for replay in replays])
-            self.hitcircle_radius = circle_radius(self.beatmap.cs(hard_rock=use_hr)) - WIDTH_CIRCLE_BORDER / 2
+            self.hitcircle_radius = circle_radius(self.beatmap.cs(hard_rock=use_hr))
             ## loading stuff
             self.is_loading = True
             # not fully accurate, but good enough
@@ -529,11 +529,17 @@ class Renderer(QFrame):
         opacity = max(0, min(1, opacity-fade_out))
         p = hitobj.position
 
+        # the pen width grows outwards and inwards equally (preferring outwards
+        # if the width is odd I think), so we need to tell it to start drawing
+        # half of the pen's width away from the radius for the final circle to
+        # have radius `self.hitcircle_radius`.
+        r = self.scaled_number(self.hitcircle_radius - WIDTH_CIRCLE_BORDER / 2)
+
         PEN_WHITE.setWidth(self.scaled_number(WIDTH_CIRCLE_BORDER))
         self.painter.setOpacity(opacity)
         self.painter.setPen(PEN_WHITE)
         self.painter.setBrush(BRUSH_GRAY)
-        self.painter.drawEllipse(self.scaled_point(p.x, p.y), self.scaled_number(self.hitcircle_radius), self.scaled_number(self.hitcircle_radius))
+        self.painter.drawEllipse(self.scaled_point(p.x, p.y), r, r)
         self.painter.setBrush(BRUSH_BLANK)
 
     @analyzer.track
@@ -578,12 +584,12 @@ class Renderer(QFrame):
         opacity = max(0, min(1, opacity))
         scale = max(1, ((self.get_hit_time(hitobj) - current_time) / self.preempt) * 3 + 1)
         p = hitobj.position
-        radius = self.hitcircle_radius * scale
+        r = self.scaled_number(self.hitcircle_radius * scale)
 
         PEN_WHITE.setWidth(self.scaled_number(WIDTH_CIRCLE_BORDER / 2))
         self.painter.setPen(PEN_WHITE)
         self.painter.setOpacity(opacity)
-        self.painter.drawEllipse(self.scaled_point(p.x, p.y), self.scaled_number(radius), self.scaled_number(radius))
+        self.painter.drawEllipse(self.scaled_point(p.x, p.y), r, r)
 
     @analyzer.track
     def draw_slider(self, hitobj):
@@ -613,7 +619,7 @@ class Renderer(QFrame):
         opacity = max(0, min(1, opacity-fade_out)) * 0.75
         p = hitobj.position
 
-        PEN_GRAY.setWidth(self.scaled_number(self.hitcircle_radius * 2 + WIDTH_CIRCLE_BORDER))
+        PEN_GRAY.setWidth(self.scaled_number(self.hitcircle_radius * 2))
         PEN_GRAY.setCapStyle(Qt.RoundCap)
         PEN_GRAY.setJoinStyle(Qt.RoundJoin)
         self.painter.setPen(PEN_GRAY)
