@@ -21,27 +21,27 @@ class VisualizerControls(QFrame):
         self.play_reverse_button = QPushButton()
         self.play_reverse_button.setIcon(QIcon(resource_path("play_reverse.png")))
         self.play_reverse_button.setFixedSize(20, 20)
-        self.play_reverse_button.setToolTip("Plays visualization in reverse")
+        self.play_reverse_button.setToolTip("Play in reverse")
 
         self.play_normal_button = QPushButton()
         self.play_normal_button.setIcon(QIcon(resource_path("play_normal.png")))
         self.play_normal_button.setFixedSize(20, 20)
-        self.play_normal_button.setToolTip("Plays visualization in normally")
+        self.play_normal_button.setToolTip("Play normally")
 
         self.next_frame_button = QPushButton()
         self.next_frame_button.setIcon(QIcon(resource_path("frame_next.png")))
         self.next_frame_button.setFixedSize(20, 20)
-        self.next_frame_button.setToolTip("Displays next frame")
+        self.next_frame_button.setToolTip("Move forward one frame")
 
         self.previous_frame_button = QPushButton()
         self.previous_frame_button.setIcon(QIcon(resource_path("frame_back.png")))
         self.previous_frame_button.setFixedSize(20, 20)
-        self.previous_frame_button.setToolTip("Displays previous frame")
+        self.previous_frame_button.setToolTip("Move backward one frame")
 
         self.pause_button = QPushButton()
         self.pause_button.setIcon(QIcon(resource_path("pause.png")))
         self.pause_button.setFixedSize(20, 20)
-        self.pause_button.setToolTip("Pause visualization")
+        self.pause_button.setToolTip("Pause / Play")
 
         self.copy_to_clipboard_button = QPushButton()
         self.copy_to_clipboard_button.setIcon(QIcon(resource_path("clipboard.svg")))
