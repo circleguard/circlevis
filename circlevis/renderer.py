@@ -44,6 +44,7 @@ SLIDER_TICKRATE = 50
 
 class Renderer(QFrame):
     update_time_signal = pyqtSignal(int)
+    pause_signal = pyqtSignal()
     analyzer = RunTimeAnalyser(frame_buffer=FRAMETIME_FRAMES)
 
     def __init__(self, beatmap_info, replays, events, library, start_speed, \
@@ -224,7 +225,7 @@ class Renderer(QFrame):
         # if we're at the end of the track or are at the beginning of the track
         # (and thus are reversing), pause and dont update
         if current_time > self.playback_len or current_time < 0:
-            self.pause()
+            self.pause_signal.emit()
             return
 
         for player in self.players:

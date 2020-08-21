@@ -13,6 +13,10 @@ class Interface(QWidget):
         self.renderer = Renderer(beatmap_info, replays, events, library, \
             start_speed, paint_info, statistic_functions)
         self.renderer.update_time_signal.connect(self.update_slider)
+        # if the renderer wants to pause itself (eg when the playback hits the
+        # end of the replay), we kick it back to us (the `Interface`) so we can
+        # also update the pause button's state.
+        self.renderer.pause_signal.connect(self.pause)
 
         self.controls = VisualizerControls(start_speed)
         self.controls.pause_button.clicked.connect(self.pause)
