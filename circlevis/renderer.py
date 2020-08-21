@@ -17,6 +17,7 @@ from circlevis.beatmap_info import BeatmapInfo
 from circlevis.player import Player
 
 WIDTH_LINE = 1
+WIDTH_LINE_RAW_VIEW = 2
 WIDTH_CROSS = 2
 WIDTH_CIRCLE_BORDER = 6
 LENGTH_CROSS = 6
@@ -307,8 +308,9 @@ class Renderer(QFrame):
         """
         alpha_step = 1 / self.num_frames_on_screen
         pen = player.pen
-        pen.setWidth(self.scaled_number(WIDTH_LINE))
-        PEN_HIGHLIGHT.setWidth(self.scaled_number(WIDTH_LINE))
+        width = WIDTH_LINE_RAW_VIEW if self.raw_view else WIDTH_LINE
+        pen.setWidth(self.scaled_number(width))
+        PEN_HIGHLIGHT.setWidth(self.scaled_number(width))
         self.painter.setPen(pen)
         highlighted_pen = False
         for i in range(player.start_pos, player.end_pos):
@@ -446,7 +448,7 @@ class Renderer(QFrame):
         """
         if self.raw_view and grey_out:
             prev_pen = self.painter.pen()
-            PEN_GREY_INACTIVE.setWidth(self.scaled_number(WIDTH_LINE))
+            PEN_GREY_INACTIVE.setWidth(self.scaled_number(WIDTH_LINE_RAW_VIEW))
             self.painter.setPen(PEN_GREY_INACTIVE)
 
         self.painter.setOpacity(alpha)
