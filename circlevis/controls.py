@@ -101,9 +101,11 @@ class VisualizerControls(QFrame):
         global_pos = self.mapToGlobal(self.settings_button.pos())
         popup_height = self.settings_popup.size().height()
         popup_width = self.settings_popup.size().width()
-        # - 6 to account for the space between the button and the top of the
-        # controls row
-        self.settings_popup.setGeometry(global_pos.x() - (popup_width / 2), \
+
+        # `x - 44` to not make the popup hang over the right side of the window
+        # (aftering centering it horizontally), and `y - 6` to account for the
+        # space between the button and the top of the controls row
+        self.settings_popup.setGeometry(global_pos.x() - (popup_width / 2) - 44,\
             global_pos.y() - popup_height - 6, popup_width, popup_height)
 
 
