@@ -320,7 +320,7 @@ class Renderer(QFrame):
                 self.painter.setPen(pen)
                 highlighted_pen = False
             self.draw_line((i - player.start_pos) * alpha_step, player.xy[i],
-                    player.xy[i + 1], grey_out=bool(player.k[i]))
+                    player.xy[i + 1], grey_out=not bool(player.k[i]))
         pen.setWidth(self.scaled_number(WIDTH_CROSS))
         self.painter.setPen(pen)
         for i in range(player.start_pos, player.end_pos+1):
@@ -329,7 +329,7 @@ class Renderer(QFrame):
             k = player.k[i]
             t = player.t[i]
             highlight = t in self.events
-            self.draw_cross(alpha, xy, grey_out = not bool(k), highlight=highlight)
+            self.draw_cross(alpha, xy, grey_out=not bool(k), highlight=highlight)
         # reset alpha
         self.painter.setOpacity(1)
 
