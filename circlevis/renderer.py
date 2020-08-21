@@ -149,7 +149,6 @@ class Renderer(QFrame):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.next_frame_from_timer)
         self.timer.start(1000/60) # 62 fps (1000ms/60frames but the result can only be a integer)
-        self.next_frame()
 
         # black background
         pal = QPalette()
@@ -165,6 +164,8 @@ class Renderer(QFrame):
         self.draw_approach_circles = True
         # how many frames for each replay to draw on screen at a time
         self.num_frames_on_screen = 15
+
+        self.next_frame()
 
     def resizeEvent(self, event):
         width = event.size().width() - GAMEPLAY_PADDING_WIDTH * 2
