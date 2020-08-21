@@ -67,12 +67,12 @@ class VisualizerControls(QFrame):
         self.speed_up_button = QPushButton()
         self.speed_up_button.setIcon(QIcon(resource_path("speed_up.png")))
         self.speed_up_button.setFixedSize(20, 20)
-        self.speed_up_button.setToolTip("Speed up")
+        self.speed_up_button.setToolTip("Increase speed")
 
         self.speed_down_button = QPushButton()
         self.speed_down_button.setIcon(QIcon(resource_path("speed_down.png")))
         self.speed_down_button.setFixedSize(20, 20)
-        self.speed_down_button.setToolTip("Speed down")
+        self.speed_down_button.setToolTip("Decrease speed")
 
         layout = QGridLayout()
         layout.addWidget(self.play_reverse_button, 16, 0, 1, 1)
