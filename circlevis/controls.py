@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QFrame, QPushButton, QSlider, QGridLayout, QLabel,
-    QVBoxLayout, QCheckBox, QHBoxLayout, QSpinBox)
+    QVBoxLayout, QCheckBox, QHBoxLayout, QSpinBox, QComboBox)
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, pyqtSignal
 
@@ -115,6 +115,7 @@ class SettingsPopup(QFrame):
     hitobjects_changed = pyqtSignal(bool)
     approach_circles_changed = pyqtSignal(bool)
     num_frames_changed = pyqtSignal(int)
+    circle_size_mod_changed = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
@@ -134,6 +135,9 @@ class SettingsPopup(QFrame):
         self.approach_circles_cb = CheckboxSetting("Draw approach circles:", True)
         self.approach_circles_cb.state_changed.connect(self.approach_circles_changed)
 
+        self.circle_size_mod_cmb = ComboBoxSetting("Adjust circle size:", "HR", ["NM", "HR"])
+        self.circle_size_mod_cmb.value_changed.connect(self.circle_size_mod_changed)
+
         self.num_frames_slider = SliderSetting("Num. frames:", 15, 1, 30)
         self.num_frames_slider.value_changed.connect(self.num_frames_changed)
 
@@ -141,6 +145,7 @@ class SettingsPopup(QFrame):
         layout.addWidget(self.raw_view_cb)
         layout.addWidget(self.hitobjects_cb)
         layout.addWidget(self.approach_circles_cb)
+        layout.addWidget(self.circle_size_mod_cmb)
         layout.addWidget(self.num_frames_slider)
         self.setLayout(layout)
 
@@ -200,3 +205,31 @@ class SliderSetting(QFrame):
         self.spinbox.setValue(new_value)
         self.slider.setValue(new_value)
         self.value_changed.emit(new_value)
+
+
+class ComboBoxSetting(QFrame):
+    value_changed = pyqtSignal(str)
+
+    def __init__(self, text, start_option, options):
+        super().__init__()
+
+        label = QLabel(text)
+        self.combobox = QComboBox(self)
+        self.combobox.setInsertPolicy(QComboBox.NoInsert)
+        self.combobox.setMaximumWidth(70)
+        for option in options:
+            self.combobox.addItem(option, option)
+
+        index = options.index(start_option)
+        self.combobox.setCurrentIndex(index)
+
+        self.combobox.currentIndexChanged.connect(self._value_changed)
+
+        layout = QHBoxLayout()
+        layout.addWidget(label, 1)
+        layout.addWidget(self.combobox, 3)
+        layout.setContentsMargins(0, 3, 0, 3)
+        self.setLayout(layout)
+
+    def _value_changed(self):
+        self.value_changed.emit(self.combobox.currentData())
