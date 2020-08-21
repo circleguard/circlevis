@@ -156,7 +156,9 @@ class Renderer(QFrame):
         self.setAutoFillBackground(True)
         self.setPalette(pal)
 
-        # settings that are changeable from the control's setting button
+        # Settings that are changeable from the control's setting button.
+        # If `True`, don't draw crosses, and draw the line in grey if the user
+        # was not pressing any keys in the start frame of that line.
         self.raw_view = False
         self.draw_hitobjects = True
         self.draw_approach_circles = True
@@ -317,8 +319,8 @@ class Renderer(QFrame):
             elif not highlight and highlighted_pen:
                 self.painter.setPen(pen)
                 highlighted_pen = False
-            self.draw_line((i-player.start_pos) * alpha_step, (player.xy[i][0], player.xy[i][1]),
-                           (player.xy[i + 1][0], player.xy[i + 1][1]))
+            self.draw_line((i - player.start_pos) * alpha_step, player.xy[i],
+                    player.xy[i + 1], grey_out=bool(player.k[i]))
         pen.setWidth(self.scaled_number(WIDTH_CROSS))
         self.painter.setPen(pen)
         for i in range(player.start_pos, player.end_pos+1):
@@ -431,18 +433,27 @@ class Renderer(QFrame):
             current_key = list(objects.keys())[i]
             self.painter.drawText(width - length/2, height - 100 - 6-10*i, "{}: {:.2f}ms".format(current_key, objects[current_key]))
 
-    def draw_line(self, alpha, start, end):
+    def draw_line(self, alpha, start, end, grey_out=False):
         """
         Draws a line at the given alpha level from the start point to the end point.
 
         Arguments:
-            Float alpha: The alpha level from 0.0-1.0 to set the line to.
-                           https://doc.qt.io/qt-5/qcolor.html#alpha-blended-drawing
+            Float alpha: The alpha level (from 0.0 to 1.0) to set the line to.
             List start: The X&Y position of the start of the line.
             List end: The X&Y position of the end of the line.
+            Boolean grey_out: Whether to grey out the line or not. This only has
+                an effect if `self.raw_view` is `True`.
         """
+        if self.raw_view and grey_out:
+            prev_pen = self.painter.pen()
+            PEN_GREY_INACTIVE.setWidth(self.scaled_number(WIDTH_LINE))
+            self.painter.setPen(PEN_GREY_INACTIVE)
+
         self.painter.setOpacity(alpha)
         self.painter.drawLine(self.scaled_point(start[0], start[1]), self.scaled_point(end[0], end[1]))
+
+        if self.raw_view and grey_out:
+            self.painter.setPen(prev_pen)
 
     def draw_cross(self, alpha, point, grey_out, highlight):
         """
