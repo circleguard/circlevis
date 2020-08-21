@@ -719,7 +719,6 @@ class Renderer(QFrame):
         self.update()
 
     def hitobjects_changed(self, new_state):
-        print(new_state)
         self.draw_hitobjects = new_state
         self.update()
 
