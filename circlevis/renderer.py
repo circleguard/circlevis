@@ -157,6 +157,7 @@ class Renderer(QFrame):
 
         # settings that are changeable from the control's setting button
         self.raw_view = False
+        self.draw_hitobjects = True
         self.draw_approach_circles = True
         # how many frames for each replay to draw on screen at a time
         self.num_frames_on_screen = 15
@@ -488,6 +489,8 @@ class Renderer(QFrame):
             QPainter painter: The painter.
             Hitobj hitobj: A Hitobject.
         """
+        if not self.draw_hitobjects:
+            return
         if isinstance(hitobj, Circle):
             self.draw_hitcircle(hitobj)
             self.draw_approachcircle(hitobj)
@@ -713,6 +716,11 @@ class Renderer(QFrame):
     def raw_view_changed(self, new_state):
         self.raw_view = new_state
         # redraw everything for the new raw view
+        self.update()
+
+    def hitobjects_changed(self, new_state):
+        print(new_state)
+        self.draw_hitobjects = new_state
         self.update()
 
     def approach_circles_changed(self, new_state):

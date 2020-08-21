@@ -7,6 +7,7 @@ from circlevis.utils import resource_path
 
 class VisualizerControls(QFrame):
     raw_view_changed = pyqtSignal(bool)
+    hitobjects_changed = pyqtSignal(bool)
     approach_circles_changed = pyqtSignal(bool)
     num_frames_changed = pyqtSignal(int)
 
@@ -59,6 +60,7 @@ class VisualizerControls(QFrame):
 
         self.settings_popup = SettingsPopup()
         self.settings_popup.raw_view_changed.connect(self.raw_view_changed)
+        self.settings_popup.hitobjects_changed.connect(self.hitobjects_changed)
         self.settings_popup.approach_circles_changed.connect(self.approach_circles_changed)
         self.settings_popup.num_frames_changed.connect(self.num_frames_changed)
 
@@ -99,7 +101,7 @@ class VisualizerControls(QFrame):
         global_pos = self.mapToGlobal(self.settings_button.pos())
         popup_height = self.settings_popup.size().height()
         popup_width = self.settings_popup.size().width()
-        # - 10 to account for the space between the button and the top of the
+        # - 6 to account for the space between the button and the top of the
         # controls row
         self.settings_popup.setGeometry(global_pos.x() - (popup_width / 2), \
             global_pos.y() - popup_height - 6, popup_width, popup_height)
@@ -108,6 +110,7 @@ class VisualizerControls(QFrame):
 
 class SettingsPopup(QFrame):
     raw_view_changed = pyqtSignal(bool)
+    hitobjects_changed = pyqtSignal(bool)
     approach_circles_changed = pyqtSignal(bool)
     num_frames_changed = pyqtSignal(int)
 
@@ -123,7 +126,10 @@ class SettingsPopup(QFrame):
         self.raw_view_cb = CheckboxSetting("Raw view:", False)
         self.raw_view_cb.state_changed.connect(self.raw_view_changed)
 
-        self.approach_circles_cb = CheckboxSetting("Approach circles:", True)
+        self.hitobjects_cb = CheckboxSetting("Draw hitobjects:", True)
+        self.hitobjects_cb.state_changed.connect(self.hitobjects_changed)
+
+        self.approach_circles_cb = CheckboxSetting("Draw approach circles:", True)
         self.approach_circles_cb.state_changed.connect(self.approach_circles_changed)
 
         self.num_frames_slider = SliderSetting("Num. frames:", 15, 1, 30)
@@ -131,6 +137,7 @@ class SettingsPopup(QFrame):
 
         layout = QVBoxLayout()
         layout.addWidget(self.raw_view_cb)
+        layout.addWidget(self.hitobjects_cb)
         layout.addWidget(self.approach_circles_cb)
         layout.addWidget(self.num_frames_slider)
         self.setLayout(layout)

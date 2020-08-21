@@ -27,6 +27,7 @@ class Interface(QWidget):
         self.controls.time_slider.setRange(0, self.renderer.playback_len)
 
         self.controls.raw_view_changed.connect(self.renderer.raw_view_changed)
+        self.controls.hitobjects_changed.connect(self.renderer.hitobjects_changed)
         self.controls.approach_circles_changed.connect(self.renderer.approach_circles_changed)
         self.controls.num_frames_changed.connect(self.renderer.num_frames_changed)
 
