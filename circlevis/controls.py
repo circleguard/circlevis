@@ -93,12 +93,17 @@ class VisualizerControls(QFrame):
         self.pause_button.setIcon(QIcon(resource_path(icon)))
 
     def settings_button_clicked(self):
+        # have to show before setting its geometry because it has some default
+        # geometry that doesn't reflect its actual proportions until it's shown
+        self.settings_popup.show()
         global_pos = self.mapToGlobal(self.settings_button.pos())
         popup_height = self.settings_popup.size().height()
         popup_width = self.settings_popup.size().width()
+        # - 10 to account for the space between the button and the top of the
+        # controls row
         self.settings_popup.setGeometry(global_pos.x() - (popup_width / 2), \
-            global_pos.y() - popup_height, popup_width, popup_height)
-        self.settings_popup.show()
+            global_pos.y() - popup_height - 6, popup_width, popup_height)
+
 
 
 class SettingsPopup(QFrame):
