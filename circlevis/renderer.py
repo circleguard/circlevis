@@ -323,8 +323,19 @@ class Renderer(QFrame):
             elif not highlight and highlighted_pen:
                 self.painter.setPen(pen)
                 highlighted_pen = False
+            grey_out = False
+            # only grey out lines if we're in raw view (crosses are greyed out
+            # instead in the normal view)
+            if self.raw_view:
+                # grey out if we don't have a keypress at the start
+                if not bool(player.k[i]):
+                    grey_out = True
+                # grey out if we're only emboldening keydowns and this is not a
+                # keydown
+                if self.only_embolden_keydowns and not bool(player.keydowns[i]):
+                    grey_out = True
             self.draw_line((i - player.start_pos) * alpha_step, player.xy[i],
-                    player.xy[i + 1], grey_out=not bool(player.k[i]))
+                    player.xy[i + 1], grey_out=grey_out)
         pen.setWidth(self.scaled_number(WIDTH_CROSS))
         self.painter.setPen(pen)
         for i in range(player.start_pos, player.end_pos+1):
@@ -333,7 +344,13 @@ class Renderer(QFrame):
             k = player.k[i]
             t = player.t[i]
             highlight = t in self.events
-            self.draw_cross(alpha, xy, grey_out=not bool(k), highlight=highlight)
+            # grey out only if no keys are held by default
+            grey_out = not bool(k)
+            # but override if we're only emboldening keydowns and this is not a
+            # keydown
+            if self.only_embolden_keydowns and not bool(player.keydowns[i]):
+                grey_out = True
+            self.draw_cross(alpha, xy, grey_out=grey_out, highlight=highlight)
         # reset alpha
         self.painter.setOpacity(1)
 
@@ -445,10 +462,9 @@ class Renderer(QFrame):
             Float alpha: The alpha level (from 0.0 to 1.0) to set the line to.
             List start: The X&Y position of the start of the line.
             List end: The X&Y position of the end of the line.
-            Boolean grey_out: Whether to grey out the line or not. This only has
-                an effect if `self.raw_view` is `True`.
+            Boolean grey_out: Whether to grey out the line or not.
         """
-        if self.raw_view and grey_out:
+        if grey_out:
             prev_pen = self.painter.pen()
             PEN_GREY_INACTIVE.setWidth(self.scaled_number(WIDTH_LINE_RAW_VIEW))
             self.painter.setPen(PEN_GREY_INACTIVE)
