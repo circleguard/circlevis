@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QVBoxLayout, QWidget, QApplication
+from circleguard import Mod
 
 from circlevis.renderer import Renderer
 from circlevis.controls import VisualizerControls
@@ -18,7 +19,13 @@ class Interface(QWidget):
         # also update the pause button's state.
         self.renderer.pause_signal.connect(self.pause)
 
-        self.controls = VisualizerControls(start_speed)
+        # we want to give `VisualizerControls` the union of all the replay's
+        # mods
+        mods = Mod.NM
+        for replay in replays:
+            mods += replay.mods
+
+        self.controls = VisualizerControls(start_speed, mods)
         self.controls.pause_button.clicked.connect(self.pause)
         self.controls.play_reverse_button.clicked.connect(self.play_reverse)
         self.controls.play_normal_button.clicked.connect(self.play_normal)
@@ -31,10 +38,11 @@ class Interface(QWidget):
         self.controls.time_slider.setRange(0, self.renderer.playback_len)
 
         self.controls.raw_view_changed.connect(self.renderer.raw_view_changed)
+        self.controls.only_embolden_keydowns_changed.connect(self.renderer.only_embolden_keydowns_changed)
         self.controls.hitobjects_changed.connect(self.renderer.hitobjects_changed)
         self.controls.approach_circles_changed.connect(self.renderer.approach_circles_changed)
         self.controls.num_frames_changed.connect(self.renderer.num_frames_changed)
-
+        self.controls.circle_size_mod_changed.connect(self.renderer.circle_size_mod_changed)
 
         layout = QVBoxLayout()
         layout.addWidget(self.renderer)

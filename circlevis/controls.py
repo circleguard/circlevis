@@ -2,16 +2,19 @@ from PyQt5.QtWidgets import (QFrame, QPushButton, QSlider, QGridLayout, QLabel,
     QVBoxLayout, QCheckBox, QHBoxLayout, QSpinBox, QComboBox)
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, pyqtSignal
+from circleguard import Mod
 
 from circlevis.utils import resource_path
 
 class VisualizerControls(QFrame):
     raw_view_changed = pyqtSignal(bool)
+    only_embolden_keydowns_changed = pyqtSignal(bool)
     hitobjects_changed = pyqtSignal(bool)
     approach_circles_changed = pyqtSignal(bool)
     num_frames_changed = pyqtSignal(int)
+    circle_size_mod_changed = pyqtSignal(str)
 
-    def __init__(self, speed):
+    def __init__(self, speed, mods):
         super().__init__()
         self.time_slider = QSlider(Qt.Horizontal)
         self.time_slider.setValue(0)
@@ -58,11 +61,13 @@ class VisualizerControls(QFrame):
         self.settings_button.setToolTip("Open settings")
         self.settings_button.clicked.connect(self.settings_button_clicked)
 
-        self.settings_popup = SettingsPopup()
+        self.settings_popup = SettingsPopup(mods)
         self.settings_popup.raw_view_changed.connect(self.raw_view_changed)
+        self.settings_popup.only_embolden_keydowns_changed.connect(self.only_embolden_keydowns_changed)
         self.settings_popup.hitobjects_changed.connect(self.hitobjects_changed)
         self.settings_popup.approach_circles_changed.connect(self.approach_circles_changed)
         self.settings_popup.num_frames_changed.connect(self.num_frames_changed)
+        self.settings_popup.circle_size_mod_changed.connect(self.circle_size_mod_changed)
 
         self.speed_up_button = QPushButton()
         self.speed_up_button.setIcon(QIcon(resource_path("speed_up.png")))
@@ -112,12 +117,13 @@ class VisualizerControls(QFrame):
 
 class SettingsPopup(QFrame):
     raw_view_changed = pyqtSignal(bool)
+    only_embolden_keydowns_changed = pyqtSignal(bool)
     hitobjects_changed = pyqtSignal(bool)
     approach_circles_changed = pyqtSignal(bool)
     num_frames_changed = pyqtSignal(int)
     circle_size_mod_changed = pyqtSignal(str)
 
-    def __init__(self):
+    def __init__(self, mods):
         super().__init__()
         # we're technically a window, but we don't want to be shown as such to
         # the user, so hide our window features (like the top bar)
@@ -129,13 +135,17 @@ class SettingsPopup(QFrame):
         self.raw_view_cb = CheckboxSetting("Raw view:", False)
         self.raw_view_cb.state_changed.connect(self.raw_view_changed)
 
+        self.only_embolden_keydowns = CheckboxSetting("Only embolden keydowns:", False)
+        self.only_embolden_keydowns.state_changed.connect(self.only_embolden_keydowns_changed)
+
         self.hitobjects_cb = CheckboxSetting("Draw hitobjects:", True)
         self.hitobjects_cb.state_changed.connect(self.hitobjects_changed)
 
         self.approach_circles_cb = CheckboxSetting("Draw approach circles:", True)
         self.approach_circles_cb.state_changed.connect(self.approach_circles_changed)
 
-        self.circle_size_mod_cmb = ComboBoxSetting("Adjust circle size:", "HR", ["NM", "HR"])
+        start_circle_size = "EZ" if Mod.EZ in mods else "HR" if Mod.HR in mods else "NM"
+        self.circle_size_mod_cmb = ComboBoxSetting("Adjust circle size:", start_circle_size, ["EZ", "NM", "HR"])
         self.circle_size_mod_cmb.value_changed.connect(self.circle_size_mod_changed)
 
         self.num_frames_slider = SliderSetting("Num. frames:", 15, 1, 30)
@@ -143,6 +153,7 @@ class SettingsPopup(QFrame):
 
         layout = QVBoxLayout()
         layout.addWidget(self.raw_view_cb)
+        layout.addWidget(self.only_embolden_keydowns)
         layout.addWidget(self.hitobjects_cb)
         layout.addWidget(self.approach_circles_cb)
         layout.addWidget(self.circle_size_mod_cmb)

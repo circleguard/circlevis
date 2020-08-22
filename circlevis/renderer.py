@@ -164,6 +164,7 @@ class Renderer(QFrame):
         self.draw_approach_circles = True
         # how many frames for each replay to draw on screen at a time
         self.num_frames_on_screen = 15
+        self.only_embolden_keydowns = False
 
         self.next_frame()
 
@@ -739,6 +740,10 @@ class Renderer(QFrame):
         # redraw everything for the new raw view
         self.update()
 
+    def only_embolden_keydowns_changed(self, new_state):
+        self.only_embolden_keydowns = new_state
+        self.update()
+
     def hitobjects_changed(self, new_state):
         self.draw_hitobjects = new_state
         self.update()
@@ -749,4 +754,14 @@ class Renderer(QFrame):
 
     def num_frames_changed(self, new_value):
         self.num_frames_on_screen = new_value
+        self.update()
+
+    def circle_size_mod_changed(self, new_value):
+        if not self.has_beatmap:
+            # cs doesn't matter to us if we don't have a beatmap (and we don't
+            # have the attributes necessary to compute it anyway)
+            return
+        use_hr = True if new_value == "HR" else False
+        use_ez = True if new_value == "EZ" else False
+        self.hitcircle_radius = circle_radius(self.beatmap.cs(hard_rock=use_hr, easy=use_ez))
         self.update()
