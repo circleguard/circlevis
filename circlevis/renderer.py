@@ -377,7 +377,7 @@ class Renderer(QFrame):
         PEN_WHITE.setWidth(1)
         self.painter.setPen(PEN_WHITE)
         self.painter.setOpacity(1)
-        self.painter.drawText(5, y, f"Clock: {round(self.clock.get_time())} ms")
+        self.painter.drawText(5, y, f"{round(self.clock.get_time())} ms")
 
         if self.num_replays > 0:
             for player in self.players:
@@ -397,11 +397,11 @@ class Renderer(QFrame):
             if self.num_replays == 2:
                 try:
                     y += 13
-                    player = self.players[1]
-                    prev_player = self.players[0]
-                    distance = math.sqrt(((prev_player.xy[prev_player.end_pos][0] - player.xy[player.end_pos][0]) ** 2) +
-                                         ((prev_player.xy[prev_player.end_pos][1] - player.xy[player.end_pos][1]) ** 2))
-                    self.painter.drawText(5, y, f"Distance {prev_player.username}-{player.username}: {int(distance)}px")
+                    p1 = self.players[0]
+                    p2 = self.players[1]
+                    distance = math.sqrt(((p1.xy[p1.end_pos][0] - p2.xy[p2.end_pos][0]) ** 2) +
+                                         ((p1.xy[p1.end_pos][1] - p2.xy[p2.end_pos][1]) ** 2))
+                    self.painter.drawText(5, y, f"{int(distance)}px apart")
                 except IndexError: # Edge case where we only have data from one cursor
                     pass
 
