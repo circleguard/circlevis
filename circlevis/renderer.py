@@ -66,7 +66,7 @@ class Renderer(QFrame):
         self.y_offset = 0
 
         # beatmap init stuff
-        self.hitobjs = []
+        self.hitobjs_to_draw = []
 
         if beatmap_info.path:
             self.beatmap = Beatmap.from_path(beatmap_info.path)
@@ -242,13 +242,15 @@ class Renderer(QFrame):
         self.update_time_signal.emit(current_time)
         self.update()
 
-    @analyzer.track
     def get_hitobjects(self):
         # get current hitobjects
         current_time = self.clock.get_time()
         found_all = False
+        # TODO optimize this by tracking our current hitobj index, this iterates
+        # through half the hitobjects of the map on average (O(1) best case and
+        # O(n) worst case) which can't be good for performance
         index = 0
-        self.hitobjs = []
+        self.hitobjs_to_draw = []
         while not found_all:
             current_hitobj = self.hit_objects[index]
             hit_t = current_hitobj.time.total_seconds() * 1000
@@ -257,7 +259,7 @@ class Renderer(QFrame):
             else:
                 hit_end = hit_t + self.hitwindow + self.fade_in
             if hit_t - self.preempt < current_time < hit_end:
-                self.hitobjs.append(current_hitobj)
+                self.hitobjs_to_draw.append(current_hitobj)
             elif hit_t > current_time:
                 found_all = True
             if index == self.num_hitobjects - 1:
@@ -300,7 +302,6 @@ class Renderer(QFrame):
         self.analyzer.enabled = self.paint_frametime
         self.painter.end()
 
-    @analyzer.track
     def paint_cursor(self, player):
         """
         Draws a cursor.
@@ -355,10 +356,9 @@ class Renderer(QFrame):
         self.painter.setOpacity(1)
 
     def paint_beatmap(self):
-        for hitobj in self.hitobjs[::-1]:
+        for hitobj in self.hitobjs_to_draw[::-1]:
             self.draw_hitobject(hitobj)
 
-    @analyzer.track
     def paint_info(self):
         """
         Draws various Information.
