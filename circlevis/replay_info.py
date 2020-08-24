@@ -39,7 +39,8 @@ class ReplayInfo(QFrame):
         events_table = EventsTable(events)
         events_table.jump_button_clicked.connect(self.seek_to)
 
-        # don't let ourselves get a horizontal scrollbar on the table
+        # don't let ourselves get a horizontal scrollbar on the table by being
+        # too small, + 54 to account for the vertical scrollbar I think?
         self.setMinimumWidth(events_table.horizontalHeader().length() + events_table.verticalHeader().width() + 54)
 
         layout = QVBoxLayout()
