@@ -1,6 +1,5 @@
 import math
 import threading
-from tempfile import TemporaryDirectory
 
 import numpy as np
 from PyQt5.QtGui import QBrush, QPen, QColor, QPalette, QPainter, QPainterPath
@@ -48,7 +47,7 @@ class Renderer(QFrame):
     pause_signal = pyqtSignal()
     analyzer = RunTimeAnalyser(frame_buffer=FRAMETIME_FRAMES)
 
-    def __init__(self, beatmap_info, replays, events, library, start_speed, \
+    def __init__(self, beatmap, replays, events, library, start_speed, \
         paint_info, statistic_functions):
         super().__init__()
         self.setMinimumSize(GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH*2, GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT*2)
@@ -68,35 +67,13 @@ class Renderer(QFrame):
         # beatmap init stuff
         self.hitobjs_to_draw = []
 
-        if beatmap_info.path:
-            self.beatmap = Beatmap.from_path(beatmap_info.path)
-            self.hit_objects = self.beatmap.hit_objects()
+        if beatmap:
+            self.hit_objects = beatmap.hit_objects()
             self.playback_len = self.get_hit_endtime(self.hit_objects[-1])
-        elif beatmap_info.map_id:
-            # library is nullable - None means we define our own (and don't care about saving)
-            # TODO move temporary directory creation to slider probably, since
-            # this logic is now duplicated here and in circlecore
-            if library:
-                # TODO expose save as an option to the user somehow?
-                # might require a slider pr or just a change in approach for us
-                self.beatmap = library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
-            else:
-                temp_dir = TemporaryDirectory()
-                self.beatmap = Library(temp_dir.name).lookup_by_id(beatmap_info.map_id, download=True)
-            self.hit_objects = self.beatmap.hit_objects()
-            self.playback_len = self.get_hit_endtime(self.hit_objects[-1])
-        else:
-            self.playback_len = 0
-
-        self.has_beatmap = beatmap_info.available()
-
-
-        # beatmap stuff
-        if self.has_beatmap:
             # for now we'll use the hr or dt modified cs, ar, and od if any
             # replay has HR enabled
             use_hr = any([Mod.HR in replay.mods for replay in replays])
-            ar = self.beatmap.ar(hard_rock=use_hr)
+            ar = beatmap.ar(hard_rock=use_hr)
             # https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate for formulas
             if ar <= 5:
                 self.preempt = 1200 + 600 * (5 - ar) / 5
@@ -105,9 +82,9 @@ class Renderer(QFrame):
                 self.preempt = 1200 - 750 * (ar - 5) / 5
                 self.fade_in = 800 - 500 * (ar - 5) / 5
 
-            self.hitwindow = od_to_ms(self.beatmap.od(hard_rock=use_hr)).hit_50
+            self.hitwindow = od_to_ms(beatmap.od(hard_rock=use_hr)).hit_50
 
-            self.hitcircle_radius = circle_radius(self.beatmap.cs(hard_rock=use_hr))
+            self.hitcircle_radius = circle_radius(beatmap.cs(hard_rock=use_hr))
             ## loading stuff
             self.is_loading = True
             # not fully accurate, but good enough
@@ -116,9 +93,11 @@ class Renderer(QFrame):
             self.sliders_current = 0
             self.thread = threading.Thread(target=self.process_sliders)
             self.thread.start()
-
+            self.has_beatmap = True
         else:
+            self.playback_len = 0
             self.is_loading = False
+            self.has_beatmap = False
 
         # if this is nonnull, when we finish loading sliders we will seek to
         # this position. Set in ``seek_to`` if it is called when we're loading

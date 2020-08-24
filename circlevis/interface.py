@@ -1,6 +1,9 @@
+from tempfile import TemporaryDirectory
+
 from PyQt5.QtWidgets import QGridLayout, QWidget, QApplication, QSplitter, QFrame
 from PyQt5.QtCore import Qt
 from circleguard import Mod
+from slider import Library, Beatmap
 
 from circlevis.renderer import Renderer
 from circlevis.controls import VisualizerControls
@@ -14,7 +17,20 @@ class Interface(QWidget):
         self.replays = replays
         self.info_panel_showing = False
 
-        self.renderer = Renderer(beatmap_info, replays, events, library, \
+        if beatmap_info.path:
+            self.beatmap = Beatmap.from_path(beatmap_info.path)
+        elif beatmap_info.map_id:
+            # library is nullable - None means we define our own (and don't care about saving)
+            # TODO move temporary directory creation to slider probably, since
+            # this logic is now duplicated here and in circlecore
+            if library:
+                self.beatmap = library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
+            else:
+                temp_dir = TemporaryDirectory()
+                self.beatmap = Library(temp_dir.name).lookup_by_id(beatmap_info.map_id, download=True)
+
+
+        self.renderer = Renderer(self.beatmap, replays, events, library, \
             start_speed, paint_info, statistic_functions)
         self.renderer.update_time_signal.connect(self.update_slider)
         # if the renderer wants to pause itself (eg when the playback hits the
