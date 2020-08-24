@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (QMainWindow, QLabel, QVBoxLayout, QFrame,
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
 from circleguard import KeylessCircleguard, Snap
+from circleguard.utils import convert_statistic
 
 class ReplayInfoWindow(QMainWindow):
     def __init__(self, replay):
@@ -16,6 +17,11 @@ class ReplayInfoWindow(QMainWindow):
 class ReplayInfo(QFrame):
     seek_to = pyqtSignal(int)
 
+    UR_YELLOW_THRESH = 60
+    UR_RED_THRESH = 40
+    FRAMETIME_YELLOW_THRESH = 14
+    FRAMETIME_RED_THRESH = 11
+
     def __init__(self, replay):
         super().__init__()
         # replay is already loaded so we don't need an api key
@@ -25,11 +31,19 @@ class ReplayInfo(QFrame):
 
         info_label = QLabel(f"{replay.username} +{mods} on map {replay.map_id}")
 
-        ur = circleguard.ur(replay, single=True).ur
-        ur_label = QLabel(f"<b>cvUR:</b> {ur:0.2f}")
+        ur_result = circleguard.ur(replay, single=True)
+        ur = round(ur_result.ur, 2)
+        ur = self.maybe_highlight(ur, self.UR_YELLOW_THRESH, self.UR_RED_THRESH)
+        # highlight ucvUR in the same way as ur or the user will get confused
+        # (these should always be the same color)
+        ucv_ur = round(ur_result.ucv_ur, 2)
+        ucv_ur = self.maybe_highlight(ucv_ur, convert_statistic(self.UR_YELLOW_THRESH, replay.mods, to="ucv"), convert_statistic(self.UR_RED_THRESH, replay.mods, to="ucv"))
 
-        frametime = circleguard.frametime(replay, single=True).frametime
-        frametime_label = QLabel(f"<b>cv frametime:</b> {frametime:0.2f}")
+        ur_label = QLabel(f"<b>cvUR:</b> {ur} ({ucv_ur} ucv)")
+
+        frametime = round(circleguard.frametime(replay, single=True).frametime, 2)
+        frametime = self.maybe_highlight(frametime, self.FRAMETIME_YELLOW_THRESH, self.FRAMETIME_RED_THRESH)
+        frametime_label = QLabel(f"<b>cv frametime:</b> {frametime}")
 
         events = []
         snaps = circleguard.snaps(replay, single=True).snaps
@@ -52,6 +66,20 @@ class ReplayInfo(QFrame):
         layout.setAlignment(Qt.AlignTop)
         self.setLayout(layout)
 
+    def maybe_highlight(self, statistic, yellow_threshold, red_threshold):
+        """
+        Colors `statistic` yellow (with html attributes) if it falls between the
+        yellow and red thresholds and red if it falls under the red threshold.
+        Otherwise `statistic` is returned unchanged.
+
+        This is intended for use with statistics where low values raises alarm,
+        such as ur or frametime.
+        """
+        if red_threshold < statistic < yellow_threshold:
+            statistic = f"<font color='yellow'>{statistic}</font>"
+        elif statistic < red_threshold:
+            statistic = f"<font color='red'>{statistic}</font>"
+        return statistic
 
 class EventsTable(QTableWidget):
     jump_button_clicked = pyqtSignal(int) # time (ms)
