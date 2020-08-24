@@ -93,19 +93,21 @@ class Renderer(QFrame):
 
         # beatmap stuff
         if self.has_beatmap:
-            # values taken from https://github.com/ppy/osu-wiki/blob/master/meta/unused/difficulty-settings.md
-            # but it was taken from the osu! wiki since then so this might be a bit incorrect.
-            if self.beatmap.approach_rate == 5:
-                self.preempt = 1200
-            elif self.beatmap.approach_rate < 5:
-                self.preempt = 1200 + 600 * (5 - self.beatmap.approach_rate) / 5
-            else:
-                self.preempt = 1200 - 750 * (self.beatmap.approach_rate - 5) / 5
-            self.hitwindow = od_to_ms(self.beatmap.overall_difficulty).hit_50
-            self.fade_in = 400
-            # for now we'll use the hr circle size if any replay has hr, TODO
-            # make this toggleable/an option somehow
+            # for now we'll use the hr or dt modified cs, ar, and od if any
+            # replay has HR or DT enabled
             use_hr = any([Mod.HR in replay.mods for replay in replays])
+            use_dt = any([Mod.DT in replay.mods for replay in replays])
+            ar = self.beatmap.ar(hard_rock=use_hr, double_time=use_dt)
+            # https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate for formulas
+            if ar <= 5:
+                self.preempt = 1200 + 600 * (5 - ar) / 5
+                self.fade_in = 800 + 400 * (5 - ar) / 5
+            else:
+                self.preempt = 1200 - 750 * (ar - 5) / 5
+                self.fade_in = 800 - 500 * (ar - 5) / 5
+
+            self.hitwindow = od_to_ms(self.beatmap.od(hard_rock=use_hr, double_time=use_dt)).hit_50
+
             self.hitcircle_radius = circle_radius(self.beatmap.cs(hard_rock=use_hr))
             ## loading stuff
             self.is_loading = True
