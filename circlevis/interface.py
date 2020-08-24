@@ -1,8 +1,10 @@
-from PyQt5.QtWidgets import QVBoxLayout, QWidget, QApplication
+from PyQt5.QtWidgets import QGridLayout, QWidget, QApplication, QSplitter, QFrame
+from PyQt5.QtCore import Qt
 from circleguard import Mod
 
 from circlevis.renderer import Renderer
 from circlevis.controls import VisualizerControls
+from circlevis.replay_info import ReplayInfo
 
 class Interface(QWidget):
     def __init__(self, beatmap_info, replays, events, library, speeds, \
@@ -10,6 +12,7 @@ class Interface(QWidget):
         super().__init__()
         self.speeds = speeds
         self.replays = replays
+        self.info_panel_showing = False
 
         self.renderer = Renderer(beatmap_info, replays, events, library, \
             start_speed, paint_info, statistic_functions)
@@ -25,7 +28,7 @@ class Interface(QWidget):
         for replay in replays:
             mods += replay.mods
 
-        self.controls = VisualizerControls(start_speed, mods)
+        self.controls = VisualizerControls(start_speed, mods, replays)
         self.controls.pause_button.clicked.connect(self.pause)
         self.controls.play_reverse_button.clicked.connect(self.play_reverse)
         self.controls.play_normal_button.clicked.connect(self.play_normal)
@@ -43,10 +46,16 @@ class Interface(QWidget):
         self.controls.approach_circles_changed.connect(self.renderer.approach_circles_changed)
         self.controls.num_frames_changed.connect(self.renderer.num_frames_changed)
         self.controls.circle_size_mod_changed.connect(self.renderer.circle_size_mod_changed)
+        self.controls.show_info_for_replay.connect(self.show_info_panel)
 
-        layout = QVBoxLayout()
-        layout.addWidget(self.renderer)
-        layout.addWidget(self.controls)
+
+        self.splitter = QSplitter()
+        # splitter lays widgets horizontally by default, so combine renderer and
+        # controls into one single widget vertically
+        self.splitter.addWidget(Combined([self.renderer, self.controls], Qt.Vertical))
+
+        layout = QGridLayout()
+        layout.addWidget(self.splitter, 1, 0, 1, 1)
         layout.setContentsMargins(0, 0, 0, 0)
         self.setLayout(layout)
 
@@ -118,3 +127,41 @@ class Interface(QWidget):
             user_str = f"u={self.replays[0].user_id}"
 
         clipboard.setText(f"circleguard://m={self.replays[0].map_id}&{user_str}&t={timestamp}")
+
+    def show_info_panel(self, replay):
+        """
+        Shows an info panel containing stats about the replay to the left of the
+        renderer. The visualizer window will expand to accomodate for this extra
+        space.
+        """
+        # don't show two info panels at once
+        if self.info_panel_showing:
+            return
+
+        replay_info = ReplayInfo(replay)
+        replay_info.seek_to.connect(self.renderer.seek_to)
+        self.splitter.insertWidget(0, replay_info)
+        self.info_panel_showing = True
+
+
+class Combined(QFrame):
+    def __init__(self, widgets, direction):
+        """
+        combines all the widgets in `widgets` according to `direction`, which is
+        one of `Qt.Horizontal` or `Qt.Vertical`
+        """
+        super().__init__()
+        layout = QGridLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        if direction not in [Qt.Horizontal, Qt.Vertical]:
+            raise ValueError("`direction` must be one of [Qt.Horizontal, "
+                "Qt.Vertical]")
+
+        for i, widget in enumerate(widgets):
+            if direction == Qt.Horizontal:
+                layout.addWidget(widget, 0, i, 1, 1)
+            else:
+                layout.addWidget(widget, i, 0, 1, 1)
+
+        self.setLayout(layout)

@@ -2,7 +2,7 @@ from PyQt5.QtWidgets import (QFrame, QPushButton, QSlider, QGridLayout, QLabel,
     QVBoxLayout, QCheckBox, QHBoxLayout, QSpinBox, QComboBox)
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, pyqtSignal
-from circleguard import Mod
+from circleguard import Mod, Replay
 
 from circlevis.utils import resource_path
 
@@ -14,8 +14,12 @@ class VisualizerControls(QFrame):
     num_frames_changed = pyqtSignal(int)
     circle_size_mod_changed = pyqtSignal(str)
 
-    def __init__(self, speed, mods):
+    show_info_for_replay = pyqtSignal(Replay)
+
+    def __init__(self, speed, mods, replays):
         super().__init__()
+        self.replays = replays
+
         self.time_slider = QSlider(Qt.Horizontal)
         self.time_slider.setValue(0)
         self.time_slider.setFixedHeight(20)
@@ -55,8 +59,14 @@ class VisualizerControls(QFrame):
         self.speed_label.setFixedSize(40, 20)
         self.speed_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
 
+        self.info_button = QPushButton()
+        self.info_button.setIcon(QIcon(resource_path("info")))
+        self.info_button.setFixedSize(20, 20)
+        self.info_button.setToolTip("Replay information")
+        self.info_button.clicked.connect(self.info_button_clicked)
+
         self.settings_button = QPushButton()
-        self.settings_button.setIcon(QIcon(resource_path("settings_wheel")))
+        self.settings_button.setIcon(QIcon(resource_path("settings_wheel.png")))
         self.settings_button.setFixedSize(20, 20)
         self.settings_button.setToolTip("Open settings")
         self.settings_button.clicked.connect(self.settings_button_clicked)
@@ -88,9 +98,10 @@ class VisualizerControls(QFrame):
         layout.addWidget(self.copy_to_clipboard_button, 16, 5, 1, 1)
         layout.addWidget(self.time_slider, 16, 6, 1, 9)
         layout.addWidget(self.speed_label, 16, 15, 1, 1)
-        layout.addWidget(self.settings_button, 16, 16, 1, 1)
-        layout.addWidget(self.speed_down_button, 16, 17, 1, 1)
-        layout.addWidget(self.speed_up_button, 16, 18, 1, 1)
+        layout.addWidget(self.info_button, 16, 16, 1, 1)
+        layout.addWidget(self.settings_button, 16, 17, 1, 1)
+        layout.addWidget(self.speed_down_button, 16, 18, 1, 1)
+        layout.addWidget(self.speed_up_button, 16, 19, 1, 1)
         layout.setContentsMargins(5, 0, 5, 5)
         self.setLayout(layout)
         self.setFixedHeight(25)
@@ -98,6 +109,10 @@ class VisualizerControls(QFrame):
     def set_paused_state(self, paused):
         icon = "play.png" if paused else "pause.png"
         self.pause_button.setIcon(QIcon(resource_path(icon)))
+
+    def info_button_clicked(self):
+        replay = self.replays[0]
+        self.show_info_for_replay.emit(replay)
 
     def settings_button_clicked(self):
         # have to show before setting its geometry because it has some default
