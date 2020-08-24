@@ -94,10 +94,9 @@ class Renderer(QFrame):
         # beatmap stuff
         if self.has_beatmap:
             # for now we'll use the hr or dt modified cs, ar, and od if any
-            # replay has HR or DT enabled
+            # replay has HR enabled
             use_hr = any([Mod.HR in replay.mods for replay in replays])
-            use_dt = any([Mod.DT in replay.mods for replay in replays])
-            ar = self.beatmap.ar(hard_rock=use_hr, double_time=use_dt)
+            ar = self.beatmap.ar(hard_rock=use_hr)
             # https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate for formulas
             if ar <= 5:
                 self.preempt = 1200 + 600 * (5 - ar) / 5
@@ -106,7 +105,7 @@ class Renderer(QFrame):
                 self.preempt = 1200 - 750 * (ar - 5) / 5
                 self.fade_in = 800 - 500 * (ar - 5) / 5
 
-            self.hitwindow = od_to_ms(self.beatmap.od(hard_rock=use_hr, double_time=use_dt)).hit_50
+            self.hitwindow = od_to_ms(self.beatmap.od(hard_rock=use_hr)).hit_50
 
             self.hitcircle_radius = circle_radius(self.beatmap.cs(hard_rock=use_hr))
             ## loading stuff
