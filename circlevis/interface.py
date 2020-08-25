@@ -17,6 +17,7 @@ class Interface(QWidget):
         self.replays = replays
         self.info_panel_showing = False
 
+        self.beatmap = None
         if beatmap_info.path:
             self.beatmap = Beatmap.from_path(beatmap_info.path)
         elif beatmap_info.map_id:
