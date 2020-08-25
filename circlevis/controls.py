@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import (QFrame, QPushButton, QSlider, QGridLayout, QLabel,
-    QVBoxLayout, QCheckBox, QHBoxLayout, QSpinBox, QComboBox)
-from PyQt5.QtGui import QIcon
+    QVBoxLayout, QCheckBox, QHBoxLayout, QSpinBox, QComboBox,
+    QStyleOptionComboBox, QStyle)
+from PyQt5.QtGui import QIcon, QPainter
 from PyQt5.QtCore import Qt, pyqtSignal
 from circleguard import Mod, Replay
 
@@ -59,11 +60,24 @@ class VisualizerControls(QFrame):
         self.speed_label.setFixedSize(40, 20)
         self.speed_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
 
-        self.info_button = QPushButton()
-        self.info_button.setIcon(QIcon(resource_path("info")))
-        self.info_button.setFixedSize(20, 20)
-        self.info_button.setToolTip("Replay information")
-        self.info_button.clicked.connect(self.info_button_clicked)
+        # info widget is a button when we only have one replay, and a combobox
+        # otherwise to let the user choose which replay to see the info for
+        if len(replays) == 1:
+            self.info_widget = QPushButton()
+            self.info_widget.setIcon(QIcon(resource_path("info.png")))
+            self.info_widget.setFixedSize(20, 20)
+            self.info_widget.setToolTip("Replay information")
+            self.info_widget.clicked.connect(self.info_button_clicked)
+        else:
+            self.info_widget = QComboBox()
+            self.info_widget.setInsertPolicy(QComboBox.NoInsert)
+            self.info_widget.addItem(QIcon(resource_path("info.png")), "")
+            self.info_widget.setFixedSize(45, 20)
+            self.info_widget.setToolTip("Replay information")
+            self.info_widget.activated.connect(self.info_combobox_activated)
+            for replay in replays:
+                self.info_widget.addItem(replay.username, replay)
+
 
         self.settings_button = QPushButton()
         self.settings_button.setIcon(QIcon(resource_path("settings_wheel.png")))
@@ -98,7 +112,7 @@ class VisualizerControls(QFrame):
         layout.addWidget(self.copy_to_clipboard_button, 16, 5, 1, 1)
         layout.addWidget(self.time_slider, 16, 6, 1, 9)
         layout.addWidget(self.speed_label, 16, 15, 1, 1)
-        layout.addWidget(self.info_button, 16, 16, 1, 1)
+        layout.addWidget(self.info_widget, 16, 16, 1, 1)
         layout.addWidget(self.settings_button, 16, 17, 1, 1)
         layout.addWidget(self.speed_down_button, 16, 18, 1, 1)
         layout.addWidget(self.speed_up_button, 16, 19, 1, 1)
@@ -128,6 +142,14 @@ class VisualizerControls(QFrame):
         self.settings_popup.setGeometry(global_pos.x() - (popup_width / 2) - 44,\
             global_pos.y() - popup_height - 6, popup_width, popup_height)
 
+    def info_combobox_activated(self):
+        # don't do anything if they selected the default entry
+        if self.info_widget.currentIndex() == 0:
+            return
+        replay = self.info_widget.currentData()
+        # reset to default entry
+        self.info_widget.setCurrentIndex(0)
+        self.show_info_for_replay.emit(replay)
 
 
 class SettingsPopup(QFrame):
