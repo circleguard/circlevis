@@ -7,13 +7,6 @@ from PyQt5.QtGui import QFont
 from circleguard import KeylessCircleguard, Snap
 from circleguard.utils import convert_statistic
 
-class ReplayInfoWindow(QMainWindow):
-    def __init__(self, replay):
-        super().__init__()
-        replay_info = ReplayInfo(replay)
-        self.setCentralWidget(replay_info)
-
-
 class ReplayInfo(QFrame):
     seek_to = pyqtSignal(int)
 
