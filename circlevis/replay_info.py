@@ -1,11 +1,14 @@
 from functools import partial
+import math
 
-from PyQt5.QtWidgets import (QMainWindow, QLabel, QVBoxLayout, QFrame,
-    QAbstractItemView, QTableWidget, QTableWidgetItem, QPushButton)
+from PyQt5.QtWidgets import (QLabel, QVBoxLayout, QFrame, QAbstractItemView,
+    QTableWidget, QTableWidgetItem, QPushButton)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont
-from circleguard import KeylessCircleguard, Snap
+from circleguard import KeylessCircleguard, Snap, Hit, Mod
 from circleguard.utils import convert_statistic
+from slider.mod import circle_radius
+import numpy as np
 
 class ReplayInfo(QFrame):
     seek_to = pyqtSignal(int)
@@ -15,10 +18,14 @@ class ReplayInfo(QFrame):
     FRAMETIME_YELLOW_THRESH = 14
     FRAMETIME_RED_THRESH = 11
 
-    def __init__(self, replay):
+    # in pixels
+    EDGE_HIT_THRESH = 6
+
+    def __init__(self, replay, beatmap):
         super().__init__()
         # replay is already loaded so we don't need an api key
         circleguard = KeylessCircleguard()
+        hitcircle_radius = circle_radius(beatmap.cs(hard_rock=Mod.HR in replay.mods))
 
         mods = replay.mods.short_name()
 
@@ -41,14 +48,26 @@ class ReplayInfo(QFrame):
         events = []
         snaps = circleguard.snaps(replay, single=True).snaps
 
+        hits = circleguard.hits(replay)
+        edge_hits = []
+        for hit in hits:
+
+            hitobj_xy = np.array([hit.hitobject.position.x, hit.hitobject.position.y])
+            # value is negative if we're inside the hitobject, so take abs
+            dist = abs(np.linalg.norm(hit.xy - hitobj_xy) - hitcircle_radius)
+
+            if dist < self.EDGE_HIT_THRESH:
+                edge_hits.append(hit)
+
         events.extend(snaps)
+        events.extend(edge_hits)
 
         events_table = EventsTable(events)
         events_table.jump_button_clicked.connect(self.seek_to)
 
         # don't let ourselves get a horizontal scrollbar on the table by being
-        # too small, + 54 to account for the vertical scrollbar I think?
-        self.setMinimumWidth(events_table.horizontalHeader().length() + events_table.verticalHeader().width() + 54)
+        # too small, + 60 to account for the vertical scrollbar I think?
+        self.setMinimumWidth(events_table.horizontalHeader().length() + events_table.verticalHeader().width() + 60)
 
         layout = QVBoxLayout()
         layout.addWidget(info_label)
@@ -90,18 +109,21 @@ class EventsTable(QTableWidget):
         font.setStyleHint(QFont.TypeWriter)
         self.setFont(font)
 
-        type_dict = {
-            Snap: "snap"
-        }
 
         self.setRowCount(len(events))
 
         for i, event in enumerate(events):
-            type_string = type_dict[type(event)]
+            if isinstance(event, Snap):
+                type_string = "snap"
+                time = event.time
+            if isinstance(event, Hit):
+                type_string = "edge hit"
+                time = event.t
+
             item = QTableWidgetItem(type_string)
             self.setItem(i, 0, item)
 
-            item = QTableWidgetItem(str(event.time))
+            item = QTableWidgetItem(str(time))
             self.setItem(i, 1, item)
 
             # we need to embed the button in a widget (or frame) so we can set
@@ -116,7 +138,7 @@ class EventsTable(QTableWidget):
             layout.addWidget(jump_to_button)
             button_widget.setLayout(layout)
 
-            jump_to_button.clicked.connect(partial(self.jump_button_clicked.emit, event.time))
+            jump_to_button.clicked.connect(partial(self.jump_button_clicked.emit, time))
             self.setCellWidget(i, 2, button_widget)
 
         self.setColumnWidth(0, 80)
