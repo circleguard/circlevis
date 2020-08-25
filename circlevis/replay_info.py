@@ -45,6 +45,8 @@ class ReplayInfo(QFrame):
         frametime = self.maybe_highlight(frametime, self.FRAMETIME_YELLOW_THRESH, self.FRAMETIME_RED_THRESH)
         frametime_label = QLabel(f"<b>cv frametime:</b> {frametime}")
 
+        events_label = QLabel("Events Table")
+
         events = []
         snaps = circleguard.snaps(replay, single=True).snaps
 
@@ -74,6 +76,7 @@ class ReplayInfo(QFrame):
         layout.addWidget(ur_label)
         layout.addWidget(frametime_label)
         layout.addSpacing(180)
+        layout.addWidget(events_label)
         layout.addWidget(events_table)
         layout.setAlignment(Qt.AlignTop)
         self.setLayout(layout)
