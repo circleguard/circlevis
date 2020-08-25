@@ -157,6 +157,12 @@ class Interface(QWidget):
 
         replay_info = ReplayInfo(replay, self.beatmap)
         replay_info.seek_to.connect(self.renderer.seek_to)
+
+        def remove_replay_info():
+            replay_info.hide()
+            self.info_panel_showing = False
+
+        replay_info.close_button_clicked.connect(remove_replay_info)
         self.splitter.insertWidget(0, replay_info)
         self.info_panel_showing = True
 

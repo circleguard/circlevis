@@ -12,6 +12,7 @@ import numpy as np
 
 class ReplayInfo(QFrame):
     seek_to = pyqtSignal(int)
+    close_button_clicked = pyqtSignal()
 
     UR_YELLOW_THRESH = 60
     UR_RED_THRESH = 40
@@ -67,18 +68,22 @@ class ReplayInfo(QFrame):
         events_table = EventsTable(events)
         events_table.jump_button_clicked.connect(self.seek_to)
 
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(self.close_button_clicked)
+        close_button.setMaximumWidth(80)
         # don't let ourselves get a horizontal scrollbar on the table by being
         # too small, + 60 to account for the vertical scrollbar I think?
         self.setMinimumWidth(events_table.horizontalHeader().length() + events_table.verticalHeader().width() + 60)
 
         layout = QVBoxLayout()
+        layout.setAlignment(Qt.AlignTop)
         layout.addWidget(info_label)
         layout.addWidget(ur_label)
         layout.addWidget(frametime_label)
         layout.addSpacing(180)
         layout.addWidget(events_label)
         layout.addWidget(events_table)
-        layout.setAlignment(Qt.AlignTop)
+        layout.addWidget(close_button)
         self.setLayout(layout)
 
     def maybe_highlight(self, statistic, yellow_threshold, red_threshold):
