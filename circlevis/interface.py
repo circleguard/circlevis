@@ -15,6 +15,7 @@ class Interface(QWidget):
         super().__init__()
         self.speeds = speeds
         self.replays = replays
+        self.library = library
         self.info_panel_showing = False
 
         self.beatmap = None
@@ -27,8 +28,10 @@ class Interface(QWidget):
             if library:
                 self.beatmap = library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
             else:
-                temp_dir = TemporaryDirectory()
-                self.beatmap = Library(temp_dir.name).lookup_by_id(beatmap_info.map_id, download=True)
+                # keep a reference so it doesn't get deleted
+                self.temp_dir = TemporaryDirectory()
+                self.library = Library(self.temp_dir.name)
+                self.beatmap = library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
 
 
         self.renderer = Renderer(self.beatmap, replays, events, library, \
@@ -155,7 +158,7 @@ class Interface(QWidget):
         if self.info_panel_showing:
             return
 
-        replay_info = ReplayInfo(replay, self.beatmap)
+        replay_info = ReplayInfo(replay, self.beatmap, self.library.path)
         replay_info.seek_to.connect(self.renderer.seek_to)
 
         def remove_replay_info():

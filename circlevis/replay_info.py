@@ -22,10 +22,17 @@ class ReplayInfo(QFrame):
     # in pixels
     EDGE_HIT_THRESH = 6
 
-    def __init__(self, replay, beatmap):
+    def __init__(self, replay, beatmap, slider_dir):
         super().__init__()
-        # replay is already loaded so we don't need an api key
-        circleguard = KeylessCircleguard()
+        # replay is already loaded so we don't need an api key. We pass a slider
+        # dir because `Interface` has already loaded a beatmap for us, but
+        # circleguard doesn't know that, so it will redownload the beatmap for
+        # ur calc unless we give it the slider dir we've already saved the
+        # beatmap too.
+        # It would probably be better if we could pass the entire `Library`
+        # object to slider instead, but I'm pretty sure `Library` instantiation
+        # is really cheap. What matters is the .osu files are already there.
+        circleguard = KeylessCircleguard(slider_dir=slider_dir)
         hitcircle_radius = circle_radius(beatmap.cs(hard_rock=Mod.HR in replay.mods))
 
         mods = replay.mods.short_name()
