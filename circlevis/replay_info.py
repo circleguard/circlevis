@@ -43,7 +43,7 @@ class ReplayInfo(QFrame):
         ur = round(ur_result.ur, 2)
         ur = self.maybe_highlight(ur, self.UR_YELLOW_THRESH, self.UR_RED_THRESH)
         # highlight ucvUR in the same way as ur or the user will get confused
-        # (these should always be the same color)
+        # (ie these should always be the same color)
         ucv_ur = round(ur_result.ucv_ur, 2)
         ucv_ur = self.maybe_highlight(ucv_ur, convert_statistic(self.UR_YELLOW_THRESH, replay.mods, to="ucv"), convert_statistic(self.UR_RED_THRESH, replay.mods, to="ucv"))
 
