@@ -20,7 +20,7 @@ class ReplayInfo(QFrame):
     FRAMETIME_RED_THRESH = 11
 
     # in pixels
-    EDGE_HIT_THRESH = 6
+    EDGE_HIT_THRESH = 3
 
     def __init__(self, replay, beatmap, slider_dir):
         super().__init__()
