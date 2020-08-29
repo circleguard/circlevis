@@ -31,7 +31,7 @@ class Interface(QWidget):
                 # keep a reference so it doesn't get deleted
                 self.temp_dir = TemporaryDirectory()
                 self.library = Library(self.temp_dir.name)
-                self.beatmap = library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
+                self.beatmap = self.library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
 
 
         self.renderer = Renderer(self.beatmap, replays, events, library, \
