@@ -1,8 +1,9 @@
 from tempfile import TemporaryDirectory
+from threading import Thread
 
 from PyQt5.QtWidgets import QGridLayout, QWidget, QApplication, QSplitter, QFrame
 from PyQt5.QtCore import Qt
-from circleguard import Mod
+from circleguard import Mod, KeylessCircleguard
 from slider import Library, Beatmap
 
 from circlevis.renderer import Renderer
@@ -21,6 +22,20 @@ class Interface(QWidget):
         # is relatively expensive and users might open and close the same info
         # panel multiple times
         self.replay_info_cache = {}
+
+        # we calculate some statistics in the background so users aren't hit
+        # with multi-second wait times when accessing replay info. Initialize
+        # with `None` so if the replay info *is* accessed before we calculate
+        # everything, no harm - `ReplayInfo` will calculate it instead.
+        self.replay_statistics_precalculated = {}
+        for replay in replays:
+            self.replay_statistics_precalculated[replay] = (None, None, None, None)
+
+        # and here's the thread which will actually start those calculations
+        cg_statistics_worked = Thread(target=self.calculate_cg_statistics)
+        # allow users to quit before we're done calculating
+        cg_statistics_worked.daemon = True
+        cg_statistics_worked.start()
 
         self.beatmap = None
         if beatmap_info.path:
@@ -162,7 +177,8 @@ class Interface(QWidget):
             replay_info = self.replay_info_cache[replay]
             replay_info.show()
         else:
-            replay_info = ReplayInfo(replay, self.beatmap, self.library.path)
+            ur_res, frametime_res, snaps_res, hits = self.replay_statistics_precalculated[replay]
+            replay_info = ReplayInfo(replay, self.beatmap, self.library.path, ur_res, frametime_res, snaps_res, hits)
             replay_info.seek_to.connect(self.renderer.seek_to)
 
         # don't show two of the same info panels at once
@@ -182,6 +198,15 @@ class Interface(QWidget):
         self.splitter.insertWidget(0, replay_info)
         self.current_replay_info = replay_info
         self.replay_info_cache[replay] = replay_info
+
+    def calculate_cg_statistics(self):
+        cg = KeylessCircleguard()
+        for replay in self.replays:
+            ur_res = cg.ur(replay, single=True)
+            frametime_res = cg.frametime(replay, single=True)
+            snaps_res = cg.snaps(replay, single=True)
+            hits = cg.hits(replay)
+            self.replay_statistics_precalculated[replay] = (ur_res, frametime_res, snaps_res, hits)
 
 
 class Combined(QFrame):
