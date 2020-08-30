@@ -24,6 +24,7 @@ class ReplayInfo(QFrame):
 
     def __init__(self, replay, beatmap, slider_dir):
         super().__init__()
+        self.replay = replay
         # replay is already loaded so we don't need an api key. We pass a slider
         # dir because `Interface` has already loaded a beatmap for us, but
         # circleguard doesn't know that, so it will redownload the beatmap for
@@ -107,6 +108,11 @@ class ReplayInfo(QFrame):
         elif statistic < red_threshold:
             statistic = f"<font color='red'>{statistic}</font>"
         return statistic
+
+    def __eq__(self, other):
+        if not isinstance(other, ReplayInfo):
+            return False
+        return self.replay == other.replay
 
 class EventsTable(QTableWidget):
     jump_button_clicked = pyqtSignal(int) # time (ms)
