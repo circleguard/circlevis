@@ -16,7 +16,11 @@ class Interface(QWidget):
         self.speeds = speeds
         self.replays = replays
         self.library = library
-        self.info_panel_showing = False
+        self.current_replay_info = None
+        # maps `circleguard.Replay` to `circlevis.ReplayInfo`, as its creation
+        # is relatively expensive and users might open and close the same info
+        # panel multiple times
+        self.replay_info_cache = {}
 
         self.beatmap = None
         if beatmap_info.path:
@@ -154,20 +158,30 @@ class Interface(QWidget):
         renderer. The visualizer window will expand to accomodate for this extra
         space.
         """
-        # don't show two info panels at once
-        if self.info_panel_showing:
-            return
+        if replay in self.replay_info_cache:
+            replay_info = self.replay_info_cache[replay]
+            replay_info.show()
+        else:
+            replay_info = ReplayInfo(replay, self.beatmap, self.library.path)
+            replay_info.seek_to.connect(self.renderer.seek_to)
 
-        replay_info = ReplayInfo(replay, self.beatmap, self.library.path)
-        replay_info.seek_to.connect(self.renderer.seek_to)
+        # don't show two of the same info panels at once
+        if self.current_replay_info != None:
+            # if they're the same, don't change anything
+            if replay_info == self.current_replay_info:
+                return
+            # Otherwise, close the current one and show the new one.
+            # simulate a "close" button press
+            self.current_replay_info.close_button_clicked.emit()
 
         def remove_replay_info():
             replay_info.hide()
-            self.info_panel_showing = False
+            self.current_replay_info = None
 
         replay_info.close_button_clicked.connect(remove_replay_info)
         self.splitter.insertWidget(0, replay_info)
-        self.info_panel_showing = True
+        self.current_replay_info = replay_info
+        self.replay_info_cache[replay] = replay_info
 
 
 class Combined(QFrame):
