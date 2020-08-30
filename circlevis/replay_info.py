@@ -134,9 +134,15 @@ class EventsTable(QTableWidget):
         # use monospaced font for the table, otherwise some timestamps are
         # smaller than others even though they have the same number of digits
         # https://stackoverflow.com/a/1835938/12164878
-        font = QFont("Monospace")
-        font.setStyleHint(QFont.TypeWriter)
-        self.setFont(font)
+
+        # Later note: turns out the default monospaced font on windows (and
+        # mac?) looks pretty bad, so leave as is for now. Don't want to have to
+        # deal with font specification (which would entail supporting
+        # computers that don't have that font) yet.
+
+        # font = QFont("Monospace")
+        # font.setStyleHint(QFont.TypeWriter)
+        # self.setFont(font)
 
 
         self.setRowCount(len(events))
