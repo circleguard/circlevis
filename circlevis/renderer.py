@@ -51,6 +51,7 @@ class Renderer(QFrame):
         paint_info, statistic_functions):
         super().__init__()
         self.setMinimumSize(GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH*2, GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT*2)
+        self.beatmap = beatmap
         # list of timestamps to highlight the frames of in a different color
         self.events = events
         # whether to show some information about each player and their cursors
