@@ -9,7 +9,7 @@ from circlevis.utils import resource_path
 
 class VisualizerControls(QFrame):
     raw_view_changed = pyqtSignal(bool)
-    only_embolden_keydowns_changed = pyqtSignal(bool)
+    only_color_keydowns_changed = pyqtSignal(bool)
     hitobjects_changed = pyqtSignal(bool)
     approach_circles_changed = pyqtSignal(bool)
     num_frames_changed = pyqtSignal(int)
@@ -87,7 +87,7 @@ class VisualizerControls(QFrame):
 
         self.settings_popup = SettingsPopup(mods)
         self.settings_popup.raw_view_changed.connect(self.raw_view_changed)
-        self.settings_popup.only_embolden_keydowns_changed.connect(self.only_embolden_keydowns_changed)
+        self.settings_popup.only_color_keydowns_changed.connect(self.only_color_keydowns_changed)
         self.settings_popup.hitobjects_changed.connect(self.hitobjects_changed)
         self.settings_popup.approach_circles_changed.connect(self.approach_circles_changed)
         self.settings_popup.num_frames_changed.connect(self.num_frames_changed)
@@ -154,7 +154,7 @@ class VisualizerControls(QFrame):
 
 class SettingsPopup(QFrame):
     raw_view_changed = pyqtSignal(bool)
-    only_embolden_keydowns_changed = pyqtSignal(bool)
+    only_color_keydowns_changed = pyqtSignal(bool)
     hitobjects_changed = pyqtSignal(bool)
     approach_circles_changed = pyqtSignal(bool)
     num_frames_changed = pyqtSignal(int)
@@ -172,8 +172,8 @@ class SettingsPopup(QFrame):
         self.raw_view_cb = CheckboxSetting("Raw view:", False)
         self.raw_view_cb.state_changed.connect(self.raw_view_changed)
 
-        self.only_embolden_keydowns = CheckboxSetting("Only embolden keydowns:", False)
-        self.only_embolden_keydowns.state_changed.connect(self.only_embolden_keydowns_changed)
+        self.only_color_keydowns = CheckboxSetting("Only color keydowns:", False)
+        self.only_color_keydowns.state_changed.connect(self.only_color_keydowns_changed)
 
         self.hitobjects_cb = CheckboxSetting("Draw hitobjects:", True)
         self.hitobjects_cb.state_changed.connect(self.hitobjects_changed)
@@ -190,7 +190,7 @@ class SettingsPopup(QFrame):
 
         layout = QVBoxLayout()
         layout.addWidget(self.raw_view_cb)
-        layout.addWidget(self.only_embolden_keydowns)
+        layout.addWidget(self.only_color_keydowns)
         layout.addWidget(self.hitobjects_cb)
         layout.addWidget(self.approach_circles_cb)
         layout.addWidget(self.circle_size_mod_cmb)

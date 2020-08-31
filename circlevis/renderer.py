@@ -145,7 +145,7 @@ class Renderer(QFrame):
         self.draw_approach_circles = True
         # how many frames for each replay to draw on screen at a time
         self.num_frames_on_screen = 15
-        self.only_embolden_keydowns = False
+        self.only_color_keydowns = False
 
         self.next_frame()
 
@@ -312,9 +312,9 @@ class Renderer(QFrame):
                 # grey out if we don't have a keypress at the start
                 if not bool(player.k[i]):
                     grey_out = True
-                # grey out if we're only emboldening keydowns and this is not a
+                # grey out if we're only coloring keydowns and this is not a
                 # keydown
-                if self.only_embolden_keydowns and not bool(player.keydowns[i]):
+                if self.only_color_keydowns and not bool(player.keydowns[i]):
                     grey_out = True
             self.draw_line((i - player.start_pos) * alpha_step, player.xy[i],
                     player.xy[i + 1], grey_out=grey_out)
@@ -328,9 +328,9 @@ class Renderer(QFrame):
             highlight = t in self.events
             # grey out only if no keys are held by default
             grey_out = not bool(k)
-            # but override if we're only emboldening keydowns and this is not a
+            # but override if we're only coloring keydowns and this is not a
             # keydown
-            if self.only_embolden_keydowns and not bool(player.keydowns[i]):
+            if self.only_color_keydowns and not bool(player.keydowns[i]):
                 grey_out = True
             self.draw_cross(alpha, xy, grey_out=grey_out, highlight=highlight)
         # reset alpha
@@ -737,8 +737,8 @@ class Renderer(QFrame):
         # redraw everything for the new raw view
         self.update()
 
-    def only_embolden_keydowns_changed(self, new_state):
-        self.only_embolden_keydowns = new_state
+    def only_color_keydowns_changed(self, new_state):
+        self.only_color_keydowns = new_state
         self.update()
 
     def hitobjects_changed(self, new_state):
