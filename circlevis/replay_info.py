@@ -70,7 +70,6 @@ class ReplayInfo(QFrame):
         hits = hits or circleguard.hits(replay)
         edge_hits = []
         for hit in hits:
-
             hitobj_xy = np.array([hit.hitobject.position.x, hit.hitobject.position.y])
             # value is negative if we're inside the hitobject, so take abs
             dist = abs(np.linalg.norm(hit.xy - hitobj_xy) - hitcircle_radius)
