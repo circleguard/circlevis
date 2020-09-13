@@ -22,10 +22,10 @@ class ReplayInfo(QFrame):
     # in pixels
     EDGE_HIT_THRESH = 3
 
-    def __init__(self, replay, beatmap, slider_dir, ur_result=None, \
-        frametime_result=None, snaps_result=None, hits=None):
+    def __init__(self, replay, beatmap, slider_dir, ur=None, \
+        frametime=None, snaps=None, edge_hits=None):
         """
-        If passed, the `ur_result`, `frametime_result`, `snaps_result`, and
+        If passed, the `ur`, `frametime`, `snaps`, and
         `hits` parameters will be used instead of recalculating them from
         scratch.
         """
@@ -40,42 +40,31 @@ class ReplayInfo(QFrame):
         # object to slider instead, but I'm pretty sure `Library` instantiation
         # is really cheap. What matters is the .osu files are already there.
         circleguard = KeylessCircleguard(slider_dir=slider_dir)
-        hitcircle_radius = circle_radius(beatmap.cs(hard_rock=Mod.HR in replay.mods))
 
         mods = replay.mods.short_name()
-
         info_label = QLabel(f"{replay.username} +{mods} on map {replay.map_id}")
 
-        ur_result = ur_result or circleguard.ur(replay, single=True)
-        ur = round(ur_result.ur, 2)
+        ur = ur or circleguard.ur(replay)
+        ucv_ur = round(convert_statistic(ur, replay.mods, to="ucv"), 2)
+        ur = round(ur, 2)
         ur = self.maybe_highlight(ur, self.UR_YELLOW_THRESH, self.UR_RED_THRESH)
         # highlight ucvUR in the same way as ur or the user will get confused
         # (ie these should always be the same color)
-        ucv_ur = round(ur_result.ucv_ur, 2)
         ucv_ur = self.maybe_highlight(ucv_ur, convert_statistic(self.UR_YELLOW_THRESH, replay.mods, to="ucv"), convert_statistic(self.UR_RED_THRESH, replay.mods, to="ucv"))
 
         ur_label = QLabel(f"<b>cvUR:</b> {ur} ({ucv_ur} ucv)")
 
-        frametime_result = frametime_result or circleguard.frametime(replay, single=True)
-        frametime = round(frametime_result.frametime, 2)
+        frametime = frametime or circleguard.frametime(replay)
+        frametime = round(frametime, 2)
         frametime = self.maybe_highlight(frametime, self.FRAMETIME_YELLOW_THRESH, self.FRAMETIME_RED_THRESH)
         frametime_label = QLabel(f"<b>cv frametime:</b> {frametime}")
 
         events_label = QLabel("Events Table")
 
         events = []
-        snaps_result = snaps_result or circleguard.snaps(replay, single=True)
-        snaps = snaps_result.snaps
+        snaps = snaps or circleguard.snaps(replay)
 
-        hits = hits or circleguard.hits(replay)
-        edge_hits = []
-        for hit in hits:
-            hitobj_xy = np.array([hit.hitobject.position.x, hit.hitobject.position.y])
-            # value is negative if we're inside the hitobject, so take abs
-            dist = abs(np.linalg.norm(hit.xy - hitobj_xy) - hitcircle_radius)
-
-            if dist < self.EDGE_HIT_THRESH:
-                edge_hits.append(hit)
+        edge_hits = edge_hits or circleguard.hits(replay, within=self.EDGE_HIT_THRESH)
 
         events.extend(snaps)
         events.extend(edge_hits)
