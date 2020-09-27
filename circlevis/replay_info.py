@@ -43,6 +43,7 @@ class ReplayInfo(QFrame):
 
         mods = replay.mods.short_name()
         info_label = QLabel(f"{replay.username} +{mods} on map {replay.map_id}")
+        info_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         ur = ur or circleguard.ur(replay)
         ucv_ur = round(convert_statistic(ur, replay.mods, to="ucv"), 2)
@@ -53,11 +54,13 @@ class ReplayInfo(QFrame):
         ucv_ur = self.maybe_highlight(ucv_ur, convert_statistic(self.UR_YELLOW_THRESH, replay.mods, to="ucv"), convert_statistic(self.UR_RED_THRESH, replay.mods, to="ucv"))
 
         ur_label = QLabel(f"<b>cvUR:</b> {ur} ({ucv_ur} ucv)")
+        ur_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         frametime = frametime or circleguard.frametime(replay)
         frametime = round(frametime, 2)
         frametime = self.maybe_highlight(frametime, self.FRAMETIME_YELLOW_THRESH, self.FRAMETIME_RED_THRESH)
         frametime_label = QLabel(f"<b>cv frametime:</b> {frametime}")
+        frametime_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
 
         events_label = QLabel("Events Table")
 
