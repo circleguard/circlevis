@@ -4,7 +4,7 @@ import math
 from PyQt5.QtWidgets import (QLabel, QVBoxLayout, QFrame, QAbstractItemView,
     QTableWidget, QTableWidgetItem, QPushButton)
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFont
+from PyQt5.QtGui import QFont, QCursor
 from circleguard import KeylessCircleguard, Snap, Hit, Mod
 from circleguard.utils import convert_statistic
 from slider.mod import circle_radius
@@ -44,6 +44,7 @@ class ReplayInfo(QFrame):
         mods = replay.mods.short_name()
         info_label = QLabel(f"{replay.username} +{mods} on map {replay.map_id}")
         info_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        info_label.setCursor(QCursor(Qt.IBeamCursor))
 
         ur = ur or circleguard.ur(replay)
         ucv_ur = round(convert_statistic(ur, replay.mods, to="ucv"), 2)
@@ -55,12 +56,14 @@ class ReplayInfo(QFrame):
 
         ur_label = QLabel(f"<b>cvUR:</b> {ur} ({ucv_ur} ucv)")
         ur_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        ur_label.setCursor(QCursor(Qt.IBeamCursor))
 
         frametime = frametime or circleguard.frametime(replay)
         frametime = round(frametime, 2)
         frametime = self.maybe_highlight(frametime, self.FRAMETIME_YELLOW_THRESH, self.FRAMETIME_RED_THRESH)
         frametime_label = QLabel(f"<b>cv frametime:</b> {frametime}")
         frametime_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        frametime_label.setCursor(QCursor(Qt.IBeamCursor))
 
         events_label = QLabel("Events Table")
 
