@@ -712,7 +712,6 @@ class Renderer(QFrame):
             Boolean seeking_backwards: Whether we're seeking to a time before
                 our current time.
         """
-        print(f"seeking to {position}")
         self.clock.time_counter = position
         # if we want to seek somewhere while we're loading sliders, we store
         # that position so we can seek to it when loaded
