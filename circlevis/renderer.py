@@ -197,9 +197,13 @@ class Renderer(QFrame):
             return
         self.next_frame()
 
-    def next_frame(self):
+    def next_frame(self, stepping_backwards=False):
         """
-        prepares next frame
+        Prepares the next frame.
+
+        If we have just set our current time to be less than what it was the
+        previous time next_frame was called, pass stepping_backwards=True so
+        the correct frame can be chosen when searching the frame list.
         """
         # just update the frame if currently loading
         if self.is_loading:
@@ -214,8 +218,18 @@ class Renderer(QFrame):
             self.pause_signal.emit()
             return
 
+        # This is the solution to the issue of stepping forward/backwards
+        # getting stuck on certain frames - we can fix it for stepping forward
+        # by always preferring the right side when searching our array, but when
+        # stepping backwards we need to prefer the left side instead.
+        side = "left" if stepping_backwards else "right"
         for player in self.players:
-            player.end_pos = np.searchsorted(player.t, current_time, "right") - 1
+            player.end_pos = np.searchsorted(player.t, current_time, side)
+            # for some reason side=right and side=left differ by 1 even when
+            # the array has no duplicates, so only account for that in the
+            # right side case
+            if side == "right":
+                player.end_pos -= 1
             player.start_pos = player.end_pos - self.num_frames_on_screen if player.end_pos >= self.num_frames_on_screen else 0
 
         if self.has_beatmap:
@@ -665,8 +679,9 @@ class Renderer(QFrame):
 
     def search_nearest_frame(self, reverse=False):
         """
-        Args:
-            Boolean reverse: chooses the search direction
+        Args
+            Boolean reverse: whether to search backwards or forwards through
+                time
         """
         if not reverse:
             next_frames = []
@@ -685,23 +700,26 @@ class Renderer(QFrame):
                 if pos == -1:
                     pos += 1
                 prev_frames.append(player.t[pos])
-            self.seek_to(max(prev_frames))
+            self.seek_to(max(prev_frames), seeking_backwards=True)
 
-    def seek_to(self, position):
+    def seek_to(self, position, seeking_backwards=False):
         """
         Seeks to position if the change is bigger than ± 10.
         Also calls next_frame() so the correct frame is displayed.
 
         Args:
             Integer position: position to seek to in ms
+            Boolean seeking_backwards: Whether we're seeking to a time before
+                our current time.
         """
+        print(f"seeking to {position}")
         self.clock.time_counter = position
         # if we want to seek somewhere while we're loading sliders, we store
         # that position so we can seek to it when loaded
         if self.is_loading:
             self.seek_to_when_loaded = position
         if self.paused:
-            self.next_frame()
+            self.next_frame(stepping_backwards=seeking_backwards)
 
     def wheelEvent(self, event):
         # support scrolling both vertically or horizontally, just respect
