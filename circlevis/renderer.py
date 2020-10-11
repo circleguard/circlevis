@@ -691,6 +691,11 @@ class Renderer(QFrame):
                 if pos == len(player.xy):
                     pos -= 1
                 next_frames.append(player.t[pos])
+            # if we're only visualizing a beatmap and there's no replays, and
+            # someone tries to advance or retreat frames, min() / max() will
+            # crash because next_frames is empty, so avoid this.
+            if not next_frames:
+                return
             self.seek_to(min(next_frames))
         else:
             prev_frames = []
@@ -700,6 +705,8 @@ class Renderer(QFrame):
                 if pos == -1:
                     pos += 1
                 prev_frames.append(player.t[pos])
+            if not prev_frames:
+                return
             self.seek_to(max(prev_frames), seeking_backwards=True)
 
     def seek_to(self, position, seeking_backwards=False):
