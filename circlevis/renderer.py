@@ -728,14 +728,14 @@ class Renderer(QFrame):
             self.next_frame(stepping_backwards=seeking_backwards)
 
     def wheelEvent(self, event):
-        # from the qt docs on pixelDelta: "This value is provided on platforms 
+        # from the qt docs on pixelDelta: "This value is provided on platforms
         # that support high-resolution pixel-based delta values, such as macOS".
         # Since not every OS provides pixelDelta, we should use it if possible
-        # but fall back to angleDelta. From my testing (sample size 1) 
+        # but fall back to angleDelta. From my testing (sample size 1)
         # pixelDelta will have both x and y as zero if it's unsupported.
         if event.pixelDelta().x() == 0 and event.pixelDelta().y() == 0:
-            # check both x and y to support users scrolling either vertically or 
-            # horizontally to move the timeline, just respect whichever is 
+            # check both x and y to support users scrolling either vertically or
+            # horizontally to move the timeline, just respect whichever is
             # greatest for that event.
             # this /5 is an arbitrary value to slow down scrolling to what
             # feels reasonable. TODO expose as a setting to the user ("scrolling
