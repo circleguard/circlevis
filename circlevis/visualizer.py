@@ -17,6 +17,15 @@ class Visualizer(QMainWindow):
         paint_info=True, statistic_functions=[]):
         super().__init__()
 
+        self.beatmap_info = beatmap_info
+        self.replays = replays
+        self.events = events
+        self.library = library
+        self.speeds = speeds
+        self.start_speed = start_speed
+        self.paint_info = paint_info
+        self.statistic_functions = statistic_functions
+
         self.setAutoFillBackground(True)
         self.setWindowTitle("Visualizer")
         self.interface = Interface(beatmap_info, replays, events, library, \
