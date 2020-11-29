@@ -160,12 +160,14 @@ class Interface(QWidget):
         clipboard = QApplication.clipboard()
 
         # TODO accomodate arbitrary numbers of replays (including 0 replays)
+        r1 = self.replays[0]
         if len(self.replays) == 2:
-            user_str = f"u={self.replays[0].user_id}&u2={self.replays[1].user_id}"
+            r2 = self.replays[1]
+            user_str = f"u={r1.user_id}&m1={r1.mods.short_name()}&u2={r2.user_id}&m2={r2.mods.short_name()}"
         else:
-            user_str = f"u={self.replays[0].user_id}"
+            user_str = f"u={r1.user_id}&m1={r1.mods.short_name()}"
 
-        clipboard.setText(f"circleguard://m={self.replays[0].map_id}&{user_str}&t={timestamp}")
+        clipboard.setText(f"circleguard://m={r1.map_id}&{user_str}&t={timestamp}")
 
     def show_info_panel(self, replay):
         """
