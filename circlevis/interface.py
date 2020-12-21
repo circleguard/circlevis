@@ -204,10 +204,14 @@ class Interface(QWidget):
     def calculate_cg_statistics(self):
         cg = KeylessCircleguard()
         for replay in self.replays:
-            ur = cg.ur(replay)
+            ur = None
+            edge_hits = None
+            if replay.map_info.available():
+                ur = cg.ur(replay)
+                edge_hits = cg.hits(replay, within=ReplayInfo.EDGE_HIT_THRESH)
+
             frametime = cg.frametime(replay)
             snaps = cg.snaps(replay)
-            edge_hits = cg.hits(replay, within=ReplayInfo.EDGE_HIT_THRESH)
             self.replay_statistics_precalculated[replay] = (ur, frametime, snaps, edge_hits)
 
 

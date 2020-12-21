@@ -46,13 +46,17 @@ class ReplayInfo(QFrame):
         info_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         info_label.setCursor(QCursor(Qt.IBeamCursor))
 
-        ur = ur or circleguard.ur(replay)
-        ucv_ur = round(convert_statistic(ur, replay.mods, to="ucv"), 2)
-        ur = round(ur, 2)
-        ur = self.maybe_highlight(ur, self.UR_YELLOW_THRESH, self.UR_RED_THRESH)
-        # highlight ucvUR in the same way as ur or the user will get confused
-        # (ie these should always be the same color)
-        ucv_ur = self.maybe_highlight(ucv_ur, convert_statistic(self.UR_YELLOW_THRESH, replay.mods, to="ucv"), convert_statistic(self.UR_RED_THRESH, replay.mods, to="ucv"))
+        if replay.map_info.available():
+            ur = ur or circleguard.ur(replay)
+            ucv_ur = round(convert_statistic(ur, replay.mods, to="ucv"), 2)
+            ur = round(ur, 2)
+            ur = self.maybe_highlight(ur, self.UR_YELLOW_THRESH, self.UR_RED_THRESH)
+            # highlight ucvUR in the same way as ur or the user will get confused
+            # (ie these should always be the same color)
+            ucv_ur = self.maybe_highlight(ucv_ur, convert_statistic(self.UR_YELLOW_THRESH, replay.mods, to="ucv"), convert_statistic(self.UR_RED_THRESH, replay.mods, to="ucv"))
+        else:
+            ur = "Unknown"
+            ucv_ur = "Unkown"
 
         ur_label = QLabel(f"<b>cvUR:</b> {ur} ({ucv_ur} ucv)")
         ur_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
@@ -70,7 +74,10 @@ class ReplayInfo(QFrame):
         events = []
         snaps = snaps or circleguard.snaps(replay)
 
-        edge_hits = edge_hits or circleguard.hits(replay, within=self.EDGE_HIT_THRESH)
+        if replay.map_info.available():
+            edge_hits = edge_hits or circleguard.hits(replay, within=self.EDGE_HIT_THRESH)
+        else:
+            edge_hits = []
 
         events.extend(snaps)
         events.extend(edge_hits)
