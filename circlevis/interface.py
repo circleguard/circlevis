@@ -37,20 +37,19 @@ class Interface(QWidget):
         cg_statistics_worked.daemon = True
         cg_statistics_worked.start()
 
+        # create our own library in a temp dir if one wasn't passed
+        if not self.library:
+            # keep a reference so it doesn't get deleted
+            self.temp_dir = TemporaryDirectory()
+            self.library = Library(self.temp_dir.name)
+
         self.beatmap = None
         if beatmap_info.path:
             self.beatmap = Beatmap.from_path(beatmap_info.path)
         elif beatmap_info.map_id:
-            # library is nullable - None means we define our own (and don't care about saving)
             # TODO move temporary directory creation to slider probably, since
             # this logic is now duplicated here and in circlecore
-            if library:
-                self.beatmap = library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
-            else:
-                # keep a reference so it doesn't get deleted
-                self.temp_dir = TemporaryDirectory()
-                self.library = Library(self.temp_dir.name)
-                self.beatmap = self.library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
+            self.beatmap = self.library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
 
 
         self.renderer = Renderer(self.beatmap, replays, events, library, \
