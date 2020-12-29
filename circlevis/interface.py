@@ -12,11 +12,12 @@ from circlevis.replay_info import ReplayInfo
 
 class Interface(QWidget):
     def __init__(self, beatmap_info, replays, events, library, speeds, \
-        start_speed, paint_info, statistic_functions):
+        start_speed, paint_info, statistic_functions, snaps_args):
         super().__init__()
         self.speeds = speeds
         self.replays = replays
         self.library = library
+        self.snaps_args = snaps_args
         self.current_replay_info = None
         # maps `circleguard.Replay` to `circlevis.ReplayInfo`, as its creation
         # is relatively expensive and users might open and close the same info
@@ -179,7 +180,7 @@ class Interface(QWidget):
             replay_info.show()
         else:
             ur, frametime, snaps, edge_hits = self.replay_statistics_precalculated[replay]
-            replay_info = ReplayInfo(replay, self.beatmap, self.library.path, ur, frametime, snaps, edge_hits)
+            replay_info = ReplayInfo(replay, self.beatmap, self.library.path, ur, frametime, snaps, edge_hits, self.snaps_args)
             replay_info.seek_to.connect(self.renderer.seek_to)
 
         # don't show two of the same info panels at once
@@ -210,7 +211,7 @@ class Interface(QWidget):
                 edge_hits = cg.hits(replay, within=ReplayInfo.EDGE_HIT_THRESH)
 
             frametime = cg.frametime(replay)
-            snaps = cg.snaps(replay)
+            snaps = cg.snaps(replay, **self.snaps_args)
             self.replay_statistics_precalculated[replay] = (ur, frametime, snaps, edge_hits)
 
 

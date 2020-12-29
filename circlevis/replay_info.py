@@ -23,7 +23,7 @@ class ReplayInfo(QFrame):
     EDGE_HIT_THRESH = 3
 
     def __init__(self, replay, beatmap, slider_dir, ur=None, \
-        frametime=None, snaps=None, edge_hits=None):
+        frametime=None, snaps=None, edge_hits=None, snaps_args={}):
         """
         If passed, the `ur`, `frametime`, `snaps`, and
         `hits` parameters will be used instead of recalculating them from
@@ -74,7 +74,7 @@ class ReplayInfo(QFrame):
         events_label = QLabel("Events Table")
 
         events = []
-        snaps = snaps or circleguard.snaps(replay)
+        snaps = snaps or circleguard.snaps(replay, **snaps_args)
 
         if replay.map_info.available():
             edge_hits = edge_hits or circleguard.hits(replay, within=self.EDGE_HIT_THRESH)

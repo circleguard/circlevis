@@ -14,7 +14,7 @@ class Visualizer(QMainWindow):
     # take speeds and start_speed.
     def __init__(self, beatmap_info, replays=[], events=[], library=None, \
         speeds=[0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0], start_speed=1,\
-        paint_info=True, statistic_functions=[]):
+        paint_info=True, statistic_functions=[], snaps_args={}):
         super().__init__()
 
         self.beatmap_info = beatmap_info
@@ -25,11 +25,12 @@ class Visualizer(QMainWindow):
         self.start_speed = start_speed
         self.paint_info = paint_info
         self.statistic_functions = statistic_functions
+        self.snaps_args = snaps_args
 
         self.setAutoFillBackground(True)
         self.setWindowTitle("Visualizer")
         self.interface = Interface(beatmap_info, replays, events, library, \
-            speeds, start_speed, paint_info, statistic_functions)
+            speeds, start_speed, paint_info, statistic_functions, snaps_args)
         self.setCentralWidget(self.interface)
 
         QShortcut(QKeySequence(Qt.Key_Space), self, self.interface.pause)
@@ -105,7 +106,7 @@ class Visualizer(QMainWindow):
 class VisualizerApp(QApplication):
     def __init__(self, beatmap_info, replays=[], events=[], library=None, \
         speeds=[0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0], start_speed=1,\
-        paint_info=True, statistic_functions=[]):
+        paint_info=True, statistic_functions=[], snaps_args={}):
         super().__init__([])
         self.setStyle("Fusion")
         self.setApplicationName("Circlevis")
@@ -118,6 +119,7 @@ class VisualizerApp(QApplication):
         self.start_speed = start_speed
         self.paint_info = paint_info
         self.statistic_functions = statistic_functions
+        self.snaps_args = snaps_args
 
     def exec(self):
         """
@@ -130,7 +132,7 @@ class VisualizerApp(QApplication):
         # all it's necessary for.
         self.visualizer = Visualizer(self.beatmap_info, self.replays, \
             self.events, self.library, self.speeds, self.start_speed, \
-            self.paint_info, self.statistic_functions)
+            self.paint_info, self.statistic_functions, self.snaps_args)
         self.visualizer.show()
         super().exec()
 
