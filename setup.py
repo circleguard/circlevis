@@ -36,7 +36,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "circleguard >= 5.0.0, <6.0.0",
-        "slider ~= 0.3.1"
+        "slider >= 0.3.1"
     ],
     package_data={"circlevis": ["resources/*"]}
 )
