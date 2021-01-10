@@ -73,10 +73,10 @@ visualizer_widget = Visualizer(bm, replays=[r])
 
 ## Advanced Usage
 
-You may have noticed that both `VisualizerApp` and `Visualizer` take several arguments beyond just a `BeatmapInfo` and list of `Replay`s. A short explanation of each follows:
+Both `VisualizerApp` and `Visualizer` can take several optional arguments:
 
-* events - a list of timestamps (in ms). If a frame with that timestamp is found in the replay, it is colored gold
-* library - A [slider](https://github.com/llllllllll/slider) `Library` class, which will be used instead of creating a new one if passed
-* speeds - a list of possible speeds the visualizer can play at. These can be switched between in real time with the speed up or speed down icons on the visualizer, or by pressing the up or down keys
-* start_speed - which speed to start playback at. This value must be in `speeds`
-* paint_info - whether to draw information about the map and replays in the upper left hand corner
+* `events` - a list of timestamps (in ms). If a frame with that timestamp is found in the replay, it is colored gold
+* `library` - A [slider](https://github.com/llllllllll/slider) `Library` class, which will be used instead of creating a new one if passed
+* `speeds` - a list of possible speeds the visualizer can play at. These can be switched between in real time with the speed up or speed down icons on the visualizer, or by pressing the up or down keys
+* `start_speed` - which speed to start playback at. This value must be in `speeds`
+* `paint_info` - whether to draw information about the map and replays in the upper left hand corner

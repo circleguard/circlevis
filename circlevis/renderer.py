@@ -1,6 +1,5 @@
 import math
 import threading
-from tempfile import TemporaryDirectory
 
 import numpy as np
 from PyQt5.QtGui import QBrush, QPen, QColor, QPalette, QPainter, QPainterPath
@@ -17,6 +16,7 @@ from circlevis.beatmap_info import BeatmapInfo
 from circlevis.player import Player
 
 WIDTH_LINE = 1
+WIDTH_LINE_RAW_VIEW = 2
 WIDTH_CROSS = 2
 WIDTH_CIRCLE_BORDER = 6
 LENGTH_CROSS = 6
@@ -44,12 +44,14 @@ SLIDER_TICKRATE = 50
 
 class Renderer(QFrame):
     update_time_signal = pyqtSignal(int)
+    pause_signal = pyqtSignal()
     analyzer = RunTimeAnalyser(frame_buffer=FRAMETIME_FRAMES)
 
-    def __init__(self, beatmap_info, replays, events, library, start_speed, \
+    def __init__(self, beatmap, replays, events, library, start_speed, \
         paint_info, statistic_functions):
         super().__init__()
         self.setMinimumSize(GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH*2, GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT*2)
+        self.beatmap = beatmap
         # list of timestamps to highlight the frames of in a different color
         self.events = events
         # whether to show some information about each player and their cursors
@@ -64,47 +66,25 @@ class Renderer(QFrame):
         self.y_offset = 0
 
         # beatmap init stuff
-        self.hitobjs = []
+        self.hitobjs_to_draw = []
 
-        if beatmap_info.path:
-            self.beatmap = Beatmap.from_path(beatmap_info.path)
-            self.hit_objects = self.beatmap.hit_objects()
+        use_hr = any([Mod.HR in replay.mods for replay in replays])
+        if beatmap:
+            self.hit_objects = beatmap.hit_objects(hard_rock=use_hr)
             self.playback_len = self.get_hit_endtime(self.hit_objects[-1])
-        elif beatmap_info.map_id:
-            # library is nullable - None means we define our own (and don't care about saving)
-            # TODO move temporary directory creation to slider probably, since
-            # this logic is now duplicated here and in circlecore
-            if library:
-                # TODO expose save as an option to the user somehow?
-                # might require a slider pr or just a change in approach for us
-                self.beatmap = library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
+
+            ar = beatmap.ar(hard_rock=use_hr)
+            # https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate for formulas
+            if ar <= 5:
+                self.preempt = 1200 + 600 * (5 - ar) / 5
+                self.fade_in = 800 + 400 * (5 - ar) / 5
             else:
-                temp_dir = TemporaryDirectory()
-                self.beatmap = Library(temp_dir.name).lookup_by_id(beatmap_info.map_id, download=True)
-            self.hit_objects = self.beatmap.hit_objects()
-            self.playback_len = self.get_hit_endtime(self.hit_objects[-1])
-        else:
-            self.playback_len = 0
+                self.preempt = 1200 - 750 * (ar - 5) / 5
+                self.fade_in = 800 - 500 * (ar - 5) / 5
 
-        self.has_beatmap = beatmap_info.available()
+            self.hitwindow = od_to_ms(beatmap.od(hard_rock=use_hr)).hit_50
 
-
-        # beatmap stuff
-        if self.has_beatmap:
-            # values taken from https://github.com/ppy/osu-wiki/blob/master/meta/unused/difficulty-settings.md
-            # but it was taken from the osu! wiki since then so this might be a bit incorrect.
-            if self.beatmap.approach_rate == 5:
-                self.preempt = 1200
-            elif self.beatmap.approach_rate < 5:
-                self.preempt = 1200 + 600 * (5 - self.beatmap.approach_rate) / 5
-            else:
-                self.preempt = 1200 - 750 * (self.beatmap.approach_rate - 5) / 5
-            self.hitwindow = od_to_ms(self.beatmap.overall_difficulty).hit_50
-            self.fade_in = 400
-            # for now we'll use the hr circle size if any replay has hr, TODO
-            # make this toggleable/an option somehow
-            use_hr = any([Mod.HR in replay.mods for replay in replays])
-            self.hitcircle_radius = circle_radius(self.beatmap.cs(hard_rock=use_hr)) - WIDTH_CIRCLE_BORDER / 2
+            self.hitcircle_radius = circle_radius(beatmap.cs(hard_rock=use_hr))
             ## loading stuff
             self.is_loading = True
             # not fully accurate, but good enough
@@ -113,9 +93,11 @@ class Renderer(QFrame):
             self.sliders_current = 0
             self.thread = threading.Thread(target=self.process_sliders)
             self.thread.start()
-
+            self.has_beatmap = True
         else:
+            self.playback_len = 0
             self.is_loading = False
+            self.has_beatmap = False
 
         # if this is nonnull, when we finish loading sliders we will seek to
         # this position. Set in ``seek_to`` if it is called when we're loading
@@ -132,11 +114,13 @@ class Renderer(QFrame):
                 Player(replay=replay,
                        pen=QPen(QColor().fromHslF(i / self.num_replays, 0.75, 0.5))))
         self.playback_len = max(max(player.t) for player in self.players) if self.num_replays > 0 else self.playback_len
-        # flip all replays with hr
-        for player in self.players:
-            if Mod.HardRock in player.mods:
-                for d in player.xy:
-                    d[1] = 384 - d[1]
+        # if our hitobjs are hard_rock versions, flip any player *without* hr
+        # so they match other hr players.
+        if use_hr:
+            for player in self.players:
+                if Mod.HardRock not in player.mods:
+                    for d in player.xy:
+                        d[1] = 384 - d[1]
 
         # clock stuff
         self.clock = Timer(start_speed)
@@ -147,7 +131,6 @@ class Renderer(QFrame):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.next_frame_from_timer)
         self.timer.start(1000/60) # 62 fps (1000ms/60frames but the result can only be a integer)
-        self.next_frame()
 
         # black background
         pal = QPalette()
@@ -180,11 +163,17 @@ class Renderer(QFrame):
         # TODO implement
         self.zoomed_scale = 1
 
-        # settings that are changeable from the control's setting button
+        # Settings that are changeable from the control's setting button.
+        # If `True`, don't draw crosses, and draw the line in grey if the user
+        # was not pressing any keys in the start frame of that line.
         self.raw_view = False
+        self.draw_hitobjects = True
         self.draw_approach_circles = True
         # how many frames for each replay to draw on screen at a time
         self.num_frames_on_screen = 15
+        self.only_color_keydowns = False
+
+        self.next_frame()
 
     def resizeEvent(self, event):
         width = event.size().width() - GAMEPLAY_PADDING_WIDTH * 2
@@ -257,9 +246,13 @@ class Renderer(QFrame):
             return
         self.next_frame()
 
-    def next_frame(self):
+    def next_frame(self, stepping_backwards=False):
         """
-        prepares next frame
+        Prepares the next frame.
+
+        If we have just set our current time to be less than what it was the
+        previous time next_frame was called, pass stepping_backwards=True so
+        the correct frame can be chosen when searching the frame list.
         """
         # just update the frame if currently loading
         if self.is_loading:
@@ -271,11 +264,21 @@ class Renderer(QFrame):
         # if we're at the end of the track or are at the beginning of the track
         # (and thus are reversing), pause and dont update
         if current_time > self.playback_len or current_time < 0:
-            self.pause()
+            self.pause_signal.emit()
             return
 
+        # This is the solution to the issue of stepping forward/backwards
+        # getting stuck on certain frames - we can fix it for stepping forward
+        # by always preferring the right side when searching our array, but when
+        # stepping backwards we need to prefer the left side instead.
+        side = "left" if stepping_backwards else "right"
         for player in self.players:
-            player.end_pos = np.searchsorted(player.t, current_time, "right") - 1
+            player.end_pos = np.searchsorted(player.t, current_time, side)
+            # for some reason side=right and side=left differ by 1 even when
+            # the array has no duplicates, so only account for that in the
+            # right side case
+            if side == "right":
+                player.end_pos -= 1
             player.start_pos = player.end_pos - self.num_frames_on_screen if player.end_pos >= self.num_frames_on_screen else 0
 
         if self.has_beatmap:
@@ -283,13 +286,15 @@ class Renderer(QFrame):
         self.update_time_signal.emit(current_time)
         self.update()
 
-    # @analyzer.track
     def get_hitobjects(self):
         # get current hitobjects
         current_time = self.clock.get_time()
         found_all = False
+        # TODO optimize this by tracking our current hitobj index, this iterates
+        # through half the hitobjects of the map on average (O(1) best case and
+        # O(n) worst case) which can't be good for performance
         index = 0
-        self.hitobjs = []
+        self.hitobjs_to_draw = []
         while not found_all:
             current_hitobj = self.hit_objects[index]
             hit_t = current_hitobj.time.total_seconds() * 1000
@@ -298,7 +303,7 @@ class Renderer(QFrame):
             else:
                 hit_end = hit_t + self.hitwindow + self.fade_in
             if hit_t - self.preempt < current_time < hit_end:
-                self.hitobjs.append(current_hitobj)
+                self.hitobjs_to_draw.append(current_hitobj)
             elif hit_t > current_time:
                 found_all = True
             if index == self.num_hitobjects - 1:
@@ -356,7 +361,6 @@ class Renderer(QFrame):
 
         self.painter.end()
 
-    # @analyzer.track
     def paint_cursor(self, player):
         """
         Draws a cursor.
@@ -366,8 +370,9 @@ class Renderer(QFrame):
         """
         alpha_step = 1 / self.num_frames_on_screen
         pen = player.pen
-        pen.setWidth(self.scaled_number(WIDTH_LINE))
-        PEN_HIGHLIGHT.setWidth(self.scaled_number(WIDTH_LINE))
+        width = WIDTH_LINE_RAW_VIEW if self.raw_view else WIDTH_LINE
+        pen.setWidth(self.scaled_number(width))
+        PEN_HIGHLIGHT.setWidth(self.scaled_number(width))
         self.painter.setPen(pen)
         highlighted_pen = False
         for i in range(player.start_pos, player.end_pos):
@@ -378,8 +383,19 @@ class Renderer(QFrame):
             elif not highlight and highlighted_pen:
                 self.painter.setPen(pen)
                 highlighted_pen = False
-            self.draw_line((i-player.start_pos) * alpha_step, (player.xy[i][0], player.xy[i][1]),
-                           (player.xy[i + 1][0], player.xy[i + 1][1]))
+            grey_out = False
+            # only grey out lines if we're in raw view (crosses are greyed out
+            # instead in the normal view)
+            if self.raw_view:
+                # grey out if we don't have a keypress at the start
+                if not bool(player.k[i]):
+                    grey_out = True
+                # grey out if we're only coloring keydowns and this is not a
+                # keydown
+                if self.only_color_keydowns and not bool(player.keydowns[i]):
+                    grey_out = True
+            self.draw_line((i - player.start_pos) * alpha_step, player.xy[i],
+                    player.xy[i + 1], grey_out=grey_out)
         pen.setWidth(self.scaled_number(WIDTH_CROSS))
         self.painter.setPen(pen)
         for i in range(player.start_pos, player.end_pos+1):
@@ -388,7 +404,13 @@ class Renderer(QFrame):
             k = player.k[i]
             t = player.t[i]
             highlight = t in self.events
-            self.draw_cross(alpha, xy, grey_out = not bool(k), highlight=highlight)
+            # grey out only if no keys are held by default
+            grey_out = not bool(k)
+            # but override if we're only coloring keydowns and this is not a
+            # keydown
+            if self.only_color_keydowns and not bool(player.keydowns[i]):
+                grey_out = True
+            self.draw_cross(alpha, xy, grey_out=grey_out, highlight=highlight)
         # reset alpha
         self.painter.setOpacity(1)
 
@@ -399,10 +421,9 @@ class Renderer(QFrame):
         self.painter.drawRect(QRectF(self.scaled_point(0, 0, debug=True), self.scaled_point(GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT, debug=True)))
 
     def paint_beatmap(self):
-        for hitobj in self.hitobjs[::-1]:
+        for hitobj in self.hitobjs_to_draw[::-1]:
             self.draw_hitobject(hitobj)
 
-    # @analyzer.track
     def paint_info(self):
         """
         Draws various replay info.
@@ -416,7 +437,7 @@ class Renderer(QFrame):
         PEN_WHITE.setWidth(1)
         self.painter.setPen(PEN_WHITE)
         self.painter.setOpacity(1)
-        self.painter.drawText(5, y, f"Clock: {round(self.clock.get_time())} ms")
+        self.painter.drawText(5, y, f"{round(self.clock.get_time())} ms")
 
         if self.num_replays > 0:
             for player in self.players:
@@ -436,11 +457,11 @@ class Renderer(QFrame):
             if self.num_replays == 2:
                 try:
                     y += 13
-                    player = self.players[1]
-                    prev_player = self.players[0]
-                    distance = math.sqrt(((prev_player.xy[prev_player.end_pos][0] - player.xy[player.end_pos][0]) ** 2) +
-                                         ((prev_player.xy[prev_player.end_pos][1] - player.xy[player.end_pos][1]) ** 2))
-                    self.painter.drawText(5, y, f"Distance {prev_player.username}-{player.username}: {int(distance)}px")
+                    p1 = self.players[0]
+                    p2 = self.players[1]
+                    distance = math.sqrt(((p1.xy[p1.end_pos][0] - p2.xy[p2.end_pos][0]) ** 2) +
+                                         ((p1.xy[p1.end_pos][1] - p2.xy[p2.end_pos][1]) ** 2))
+                    self.painter.drawText(5, y, f"{int(distance)}px apart")
                 except IndexError: # Edge case where we only have data from one cursor
                     pass
 
@@ -493,18 +514,26 @@ class Renderer(QFrame):
             current_key = list(objects.keys())[i]
             self.painter.drawText(width - length/2, height - 100 - 6-10*i, "{}: {:.2f}ms".format(current_key, objects[current_key]))
 
-    def draw_line(self, alpha, start, end):
+    def draw_line(self, alpha, start, end, grey_out=False):
         """
         Draws a line at the given alpha level from the start point to the end point.
 
         Arguments:
-            Float alpha: The alpha level from 0.0-1.0 to set the line to.
-                           https://doc.qt.io/qt-5/qcolor.html#alpha-blended-drawing
+            Float alpha: The alpha level (from 0.0 to 1.0) to set the line to.
             List start: The X&Y position of the start of the line.
             List end: The X&Y position of the end of the line.
+            Boolean grey_out: Whether to grey out the line or not.
         """
+        if grey_out:
+            prev_pen = self.painter.pen()
+            PEN_GREY_INACTIVE.setWidth(self.scaled_number(WIDTH_LINE_RAW_VIEW))
+            self.painter.setPen(PEN_GREY_INACTIVE)
+
         self.painter.setOpacity(alpha)
         self.painter.drawLine(self.scaled_point(start[0], start[1]), self.scaled_point(end[0], end[1]))
+
+        if self.raw_view and grey_out:
+            self.painter.setPen(prev_pen)
 
     def draw_cross(self, alpha, point, grey_out, highlight):
         """
@@ -552,6 +581,8 @@ class Renderer(QFrame):
             QPainter painter: The painter.
             Hitobj hitobj: A Hitobject.
         """
+        if not self.draw_hitobjects:
+            return
         if isinstance(hitobj, Circle):
             self.draw_hitcircle(hitobj)
             self.draw_approachcircle(hitobj)
@@ -575,11 +606,17 @@ class Renderer(QFrame):
         opacity = max(0, min(1, opacity-fade_out))
         p = hitobj.position
 
+        # the pen width grows outwards and inwards equally (preferring outwards
+        # if the width is odd I think), so we need to tell it to start drawing
+        # half of the pen's width away from the radius for the final circle to
+        # have radius `self.hitcircle_radius`.
+        r = self.scaled_number(self.hitcircle_radius - WIDTH_CIRCLE_BORDER / 2)
+
         PEN_WHITE.setWidth(self.scaled_number(WIDTH_CIRCLE_BORDER))
         self.painter.setOpacity(opacity)
         self.painter.setPen(PEN_WHITE)
         self.painter.setBrush(BRUSH_GRAY)
-        self.painter.drawEllipse(self.scaled_point(p.x, p.y), self.scaled_number(self.hitcircle_radius), self.scaled_number(self.hitcircle_radius))
+        self.painter.drawEllipse(self.scaled_point(p.x, p.y), r, r)
         self.painter.setBrush(BRUSH_BLANK)
 
     # @analyzer.track
@@ -624,12 +661,12 @@ class Renderer(QFrame):
         opacity = max(0, min(1, opacity))
         scale = max(1, ((self.get_hit_time(hitobj) - current_time) / self.preempt) * 3 + 1)
         p = hitobj.position
-        radius = self.hitcircle_radius * scale
+        r = self.scaled_number(self.hitcircle_radius * scale)
 
         PEN_WHITE.setWidth(self.scaled_number(WIDTH_CIRCLE_BORDER / 2))
         self.painter.setPen(PEN_WHITE)
         self.painter.setOpacity(opacity)
-        self.painter.drawEllipse(self.scaled_point(p.x, p.y), self.scaled_number(radius), self.scaled_number(radius))
+        self.painter.drawEllipse(self.scaled_point(p.x, p.y), r, r)
 
     # @analyzer.track
     def draw_slider(self, hitobj):
@@ -659,7 +696,7 @@ class Renderer(QFrame):
         opacity = max(0, min(1, opacity-fade_out)) * 0.75
         p = hitobj.position
 
-        PEN_GRAY.setWidth(self.scaled_number(self.hitcircle_radius * 2 + WIDTH_CIRCLE_BORDER))
+        PEN_GRAY.setWidth(self.scaled_number(self.hitcircle_radius * 2))
         PEN_GRAY.setCapStyle(Qt.RoundCap)
         PEN_GRAY.setJoinStyle(Qt.RoundJoin)
         self.painter.setPen(PEN_GRAY)
@@ -718,8 +755,9 @@ class Renderer(QFrame):
 
     def search_nearest_frame(self, reverse=False):
         """
-        Args:
-            Boolean reverse: chooses the search direction
+        Args
+            Boolean reverse: whether to search backwards or forwards through
+                time
         """
         if not reverse:
             next_frames = []
@@ -729,6 +767,11 @@ class Renderer(QFrame):
                 if pos == len(player.xy):
                     pos -= 1
                 next_frames.append(player.t[pos])
+            # if we're only visualizing a beatmap and there's no replays, and
+            # someone tries to advance or retreat frames, min() / max() will
+            # crash because next_frames is empty, so avoid this.
+            if not next_frames:
+                return
             self.seek_to(min(next_frames))
         else:
             prev_frames = []
@@ -738,15 +781,19 @@ class Renderer(QFrame):
                 if pos == -1:
                     pos += 1
                 prev_frames.append(player.t[pos])
-            self.seek_to(max(prev_frames))
+            if not prev_frames:
+                return
+            self.seek_to(max(prev_frames), seeking_backwards=True)
 
-    def seek_to(self, position):
+    def seek_to(self, position, seeking_backwards=False):
         """
         Seeks to position if the change is bigger than ± 10.
         Also calls next_frame() so the correct frame is displayed.
 
         Args:
             Integer position: position to seek to in ms
+            Boolean seeking_backwards: Whether we're seeking to a time before
+                our current time.
         """
         self.clock.time_counter = position
         # if we want to seek somewhere while we're loading sliders, we store
@@ -754,12 +801,25 @@ class Renderer(QFrame):
         if self.is_loading:
             self.seek_to_when_loaded = position
         if self.paused:
-            self.next_frame()
+            self.next_frame(stepping_backwards=seeking_backwards)
 
     def wheelEvent(self, event):
-        # support scrolling both vertically or horizontally, just respect
-        # whichever is greatest for that event
-        delta = max(event.pixelDelta().x(), event.pixelDelta().y(), key=abs)
+        # from the qt docs on pixelDelta: "This value is provided on platforms
+        # that support high-resolution pixel-based delta values, such as macOS".
+        # Since not every OS provides pixelDelta, we should use it if possible
+        # but fall back to angleDelta. From my testing (sample size 1)
+        # pixelDelta will have both x and y as zero if it's unsupported.
+        if event.pixelDelta().x() == 0 and event.pixelDelta().y() == 0:
+            # check both x and y to support users scrolling either vertically or
+            # horizontally to move the timeline, just respect whichever is
+            # greatest for that event.
+            # this /5 is an arbitrary value to slow down scrolling to what
+            # feels reasonable. TODO expose as a setting to the user ("scrolling
+            # sensitivity")
+            delta = max(event.angleDelta().x(), event.angleDelta().y(), key=abs) / 5
+        else:
+            delta = max(event.angleDelta().x(), event.angleDelta().y(), key=abs)
+
         self.seek_to(self.clock.time_counter + delta)
 
     def mouseMoveEvent(self, event):
@@ -835,12 +895,24 @@ class Renderer(QFrame):
         self.paused = False
         self.clock.resume()
 
+    def zoom_button_clicked(self):
+        QApplication.setOverrideCursor(Qt.CrossCursor)
+        self.can_start_zoom = True
+
     def toggle_frametime(self):
         self.paint_frametime = not self.paint_frametime
 
     def raw_view_changed(self, new_state):
         self.raw_view = new_state
         # redraw everything for the new raw view
+        self.update()
+
+    def only_color_keydowns_changed(self, new_state):
+        self.only_color_keydowns = new_state
+        self.update()
+
+    def hitobjects_changed(self, new_state):
+        self.draw_hitobjects = new_state
         self.update()
 
     def approach_circles_changed(self, new_state):
@@ -851,6 +923,12 @@ class Renderer(QFrame):
         self.num_frames_on_screen = new_value
         self.update()
 
-    def zoom_button_clicked(self):
-        QApplication.setOverrideCursor(Qt.CrossCursor)
-        self.can_start_zoom = True
+    def circle_size_mod_changed(self, new_value):
+        if not self.has_beatmap:
+            # cs doesn't matter to us if we don't have a beatmap (and we don't
+            # have the attributes necessary to compute it anyway)
+            return
+        use_hr = True if new_value == "HR" else False
+        use_ez = True if new_value == "EZ" else False
+        self.hitcircle_radius = circle_radius(self.beatmap.cs(hard_rock=use_hr, easy=use_ez))
+        self.update()

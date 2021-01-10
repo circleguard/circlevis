@@ -8,6 +8,7 @@ class Player():
         # runs of the visualizer and correct on even runs of the visualizer)
         self.xy = replay.xy.copy()
         self.k = replay.k
+        self.keydowns = replay.keydowns
         self.end_pos = 0
         self.start_pos = 0
         self.mods = replay.mods
