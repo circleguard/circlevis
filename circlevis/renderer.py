@@ -1,6 +1,5 @@
 import math
 import threading
-from tempfile import TemporaryDirectory
 from datetime import timedelta
 
 import numpy as np
