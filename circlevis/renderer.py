@@ -1,6 +1,7 @@
 import math
 import threading
 from tempfile import TemporaryDirectory
+from datetime import timedelta
 
 import numpy as np
 from PyQt5.QtGui import QBrush, QPen, QColor, QPalette, QPainter, QPainterPath
@@ -405,14 +406,20 @@ class Renderer(QFrame):
                 except IndexError: # Edge case where we only have data from one cursor
                     pass
 
-            if self.num_replays == 1:
+            if self.num_replays == 1 and self.has_beatmap:
                 y += 13
                 player = self.players[0]
-                hitobj = self.nearest_hitobj()
-                # whether we're closest to the next hitobject or the previous one
-                next_hitobj_used = hitobj.time.total_seconds() * 1000 > self.clock.get_time()
-                distance = self.distance_between(player.xy[player.end_pos], hitobj)
-                self.painter.drawText(5, y, f"{distance:0.2f}px from {'next' if next_hitobj_used else 'previous'} circle")
+                current_t = timedelta(milliseconds=int(self.clock.get_time()))
+                closest_hitobj = self.beatmap.closest_hitobject(current_t)
+                distance = self.distance_between(player.xy[player.end_pos], closest_hitobj)
+
+                # show "x px inside hitobj" instead of a negative distance
+                inside = False
+                if distance < 0:
+                    inside = True
+                    distance = abs(distance)
+
+                self.painter.drawText(5, y, f"{distance:0.2f}px {'inside' if inside else 'from'} closest hitobj")
 
             for function in self.statistic_functions:
                 y += 13
@@ -759,47 +766,6 @@ class Renderer(QFrame):
 
     def toggle_frametime(self):
         self.paint_frametime = not self.paint_frametime
-
-    def nearest_hitobj(self):
-        """
-        Returns the hitobject whose start time is closest
-        """
-        # we select two candidates, the first one is the nearest hitobject
-        # which appears before our current t, and the second is the nearest one
-        # which appears after our current t.
-        candidate_before = None
-        candidate_after = None
-
-        hitobjs = iter(self.hit_objects)
-        prev_hitobj = next(hitobjs)
-        current_t = self.clock.get_time()
-        for hitobj in hitobjs:
-            hitobj_t = hitobj.time.total_seconds() * 1000
-            # if this is the first hitobj after our current time then it is our
-            # `candidate_after`, and the first hitobj before our current time is
-            # `candidate_before`
-            if hitobj_t > current_t:
-                candidate_after = hitobj
-                candidate_before = prev_hitobj
-                break
-            prev_hitobj = hitobj
-
-        # if our current_t is after the last hitobject's time, we won't have a
-        # candidate after, so the closest hitobj is the last hitobj of the map,
-        # ie the value of prev_hitobj after the loop finishes
-        if not candidate_after:
-            return prev_hitobj
-
-        # now that we have two candidates, see which one is closer in time to us
-        dist_to_before = abs(candidate_before.time.total_seconds() * 1000 - current_t)
-        dist_to_after = abs(candidate_after.time.total_seconds() * 1000 - current_t)
-
-        if dist_to_before < dist_to_after:
-            # print(candidate_before.time.total_seconds() * 1000)
-            return candidate_before
-        else:
-            # print(candidate_after.time.total_seconds() * 1000)
-            return candidate_after
 
     def distance_between(self, point, hitobject):
         """
