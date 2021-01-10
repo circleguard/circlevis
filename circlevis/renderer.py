@@ -69,12 +69,12 @@ class Renderer(QFrame):
         # beatmap init stuff
         self.hitobjs_to_draw = []
 
-        use_hr = any([Mod.HR in replay.mods for replay in replays])
+        self.use_hr = any([Mod.HR in replay.mods for replay in replays])
         if beatmap:
-            self.hit_objects = beatmap.hit_objects(hard_rock=use_hr)
+            self.hit_objects = beatmap.hit_objects(hard_rock=self.use_hr)
             self.playback_len = self.get_hit_endtime(self.hit_objects[-1])
 
-            ar = beatmap.ar(hard_rock=use_hr)
+            ar = beatmap.ar(hard_rock=self.use_hr)
             # https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate for formulas
             if ar <= 5:
                 self.preempt = 1200 + 600 * (5 - ar) / 5
@@ -83,9 +83,9 @@ class Renderer(QFrame):
                 self.preempt = 1200 - 750 * (ar - 5) / 5
                 self.fade_in = 800 - 500 * (ar - 5) / 5
 
-            self.hitwindow = od_to_ms(beatmap.od(hard_rock=use_hr)).hit_50
+            self.hitwindow = od_to_ms(beatmap.od(hard_rock=self.use_hr)).hit_50
 
-            self.hitcircle_radius = circle_radius(beatmap.cs(hard_rock=use_hr))
+            self.hitcircle_radius = circle_radius(beatmap.cs(hard_rock=self.use_hr))
             ## loading stuff
             self.is_loading = True
             # not fully accurate, but good enough
@@ -117,7 +117,7 @@ class Renderer(QFrame):
         self.playback_len = max(max(player.t) for player in self.players) if self.num_replays > 0 else self.playback_len
         # if our hitobjs are hard_rock versions, flip any player *without* hr
         # so they match other hr players.
-        if use_hr:
+        if self.use_hr:
             for player in self.players:
                 if Mod.HardRock not in player.mods:
                     for d in player.xy:
@@ -407,6 +407,8 @@ class Renderer(QFrame):
                 player = self.players[0]
                 current_t = timedelta(milliseconds=int(self.clock.get_time()))
                 closest_hitobj = self.beatmap.closest_hitobject(current_t)
+                if self.use_hr:
+                    closest_hitobj = closest_hitobj.hard_rock
                 distance = self.distance_between(player.xy[player.end_pos], closest_hitobj)
 
                 # show "x px inside hitobj" instead of a negative distance
