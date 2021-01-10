@@ -1,21 +1,26 @@
 from PyQt5.QtWidgets import (QFrame, QPushButton, QSlider, QGridLayout, QLabel,
-    QVBoxLayout, QCheckBox, QHBoxLayout, QSpinBox, QComboBox)
-from PyQt5.QtGui import QIcon
+    QVBoxLayout, QCheckBox, QHBoxLayout, QSpinBox, QComboBox,
+    QStyleOptionComboBox, QStyle)
+from PyQt5.QtGui import QIcon, QPainter
 from PyQt5.QtCore import Qt, pyqtSignal
-from circleguard import Mod
+from circleguard import Mod, Replay
 
 from circlevis.utils import resource_path
 
 class VisualizerControls(QFrame):
     raw_view_changed = pyqtSignal(bool)
-    only_embolden_keydowns_changed = pyqtSignal(bool)
+    only_color_keydowns_changed = pyqtSignal(bool)
     hitobjects_changed = pyqtSignal(bool)
     approach_circles_changed = pyqtSignal(bool)
     num_frames_changed = pyqtSignal(int)
     circle_size_mod_changed = pyqtSignal(str)
 
-    def __init__(self, speed, mods):
+    show_info_for_replay = pyqtSignal(Replay)
+
+    def __init__(self, speed, mods, replays):
         super().__init__()
+        self.replays = replays
+
         self.time_slider = QSlider(Qt.Horizontal)
         self.time_slider.setValue(0)
         self.time_slider.setFixedHeight(20)
@@ -55,15 +60,34 @@ class VisualizerControls(QFrame):
         self.speed_label.setFixedSize(40, 20)
         self.speed_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
 
+        # info widget is a button when we only have one replay, and a combobox
+        # otherwise to let the user choose which replay to see the info for
+        if len(replays) == 1:
+            self.info_widget = QPushButton()
+            self.info_widget.setIcon(QIcon(resource_path("info.png")))
+            self.info_widget.setFixedSize(20, 20)
+            self.info_widget.setToolTip("Replay information")
+            self.info_widget.clicked.connect(self.info_button_clicked)
+        else:
+            self.info_widget = QComboBox()
+            self.info_widget.setInsertPolicy(QComboBox.NoInsert)
+            self.info_widget.addItem(QIcon(resource_path("info.png")), "")
+            self.info_widget.setFixedSize(45, 20)
+            self.info_widget.setToolTip("Replay information")
+            self.info_widget.activated.connect(self.info_combobox_activated)
+            for replay in replays:
+                self.info_widget.addItem(replay.username, replay)
+
+
         self.settings_button = QPushButton()
-        self.settings_button.setIcon(QIcon(resource_path("settings_wheel")))
+        self.settings_button.setIcon(QIcon(resource_path("settings_wheel.png")))
         self.settings_button.setFixedSize(20, 20)
         self.settings_button.setToolTip("Open settings")
         self.settings_button.clicked.connect(self.settings_button_clicked)
 
         self.settings_popup = SettingsPopup(mods)
         self.settings_popup.raw_view_changed.connect(self.raw_view_changed)
-        self.settings_popup.only_embolden_keydowns_changed.connect(self.only_embolden_keydowns_changed)
+        self.settings_popup.only_color_keydowns_changed.connect(self.only_color_keydowns_changed)
         self.settings_popup.hitobjects_changed.connect(self.hitobjects_changed)
         self.settings_popup.approach_circles_changed.connect(self.approach_circles_changed)
         self.settings_popup.num_frames_changed.connect(self.num_frames_changed)
@@ -88,9 +112,10 @@ class VisualizerControls(QFrame):
         layout.addWidget(self.copy_to_clipboard_button, 16, 5, 1, 1)
         layout.addWidget(self.time_slider, 16, 6, 1, 9)
         layout.addWidget(self.speed_label, 16, 15, 1, 1)
-        layout.addWidget(self.settings_button, 16, 16, 1, 1)
-        layout.addWidget(self.speed_down_button, 16, 17, 1, 1)
-        layout.addWidget(self.speed_up_button, 16, 18, 1, 1)
+        layout.addWidget(self.info_widget, 16, 16, 1, 1)
+        layout.addWidget(self.settings_button, 16, 17, 1, 1)
+        layout.addWidget(self.speed_down_button, 16, 18, 1, 1)
+        layout.addWidget(self.speed_up_button, 16, 19, 1, 1)
         layout.setContentsMargins(5, 0, 5, 5)
         self.setLayout(layout)
         self.setFixedHeight(25)
@@ -98,6 +123,10 @@ class VisualizerControls(QFrame):
     def set_paused_state(self, paused):
         icon = "play.png" if paused else "pause.png"
         self.pause_button.setIcon(QIcon(resource_path(icon)))
+
+    def info_button_clicked(self):
+        replay = self.replays[0]
+        self.show_info_for_replay.emit(replay)
 
     def settings_button_clicked(self):
         # have to show before setting its geometry because it has some default
@@ -113,11 +142,19 @@ class VisualizerControls(QFrame):
         self.settings_popup.setGeometry(global_pos.x() - (popup_width / 2) - 44,\
             global_pos.y() - popup_height - 6, popup_width, popup_height)
 
+    def info_combobox_activated(self):
+        # don't do anything if they selected the default entry
+        if self.info_widget.currentIndex() == 0:
+            return
+        replay = self.info_widget.currentData()
+        # reset to default entry
+        self.info_widget.setCurrentIndex(0)
+        self.show_info_for_replay.emit(replay)
 
 
 class SettingsPopup(QFrame):
     raw_view_changed = pyqtSignal(bool)
-    only_embolden_keydowns_changed = pyqtSignal(bool)
+    only_color_keydowns_changed = pyqtSignal(bool)
     hitobjects_changed = pyqtSignal(bool)
     approach_circles_changed = pyqtSignal(bool)
     num_frames_changed = pyqtSignal(int)
@@ -135,8 +172,8 @@ class SettingsPopup(QFrame):
         self.raw_view_cb = CheckboxSetting("Raw view:", False)
         self.raw_view_cb.state_changed.connect(self.raw_view_changed)
 
-        self.only_embolden_keydowns = CheckboxSetting("Only embolden keydowns:", False)
-        self.only_embolden_keydowns.state_changed.connect(self.only_embolden_keydowns_changed)
+        self.only_color_keydowns = CheckboxSetting("Only color keydowns:", False)
+        self.only_color_keydowns.state_changed.connect(self.only_color_keydowns_changed)
 
         self.hitobjects_cb = CheckboxSetting("Draw hitobjects:", True)
         self.hitobjects_cb.state_changed.connect(self.hitobjects_changed)
@@ -153,7 +190,7 @@ class SettingsPopup(QFrame):
 
         layout = QVBoxLayout()
         layout.addWidget(self.raw_view_cb)
-        layout.addWidget(self.only_embolden_keydowns)
+        layout.addWidget(self.only_color_keydowns)
         layout.addWidget(self.hitobjects_cb)
         layout.addWidget(self.approach_circles_cb)
         layout.addWidget(self.circle_size_mod_cmb)

@@ -49,10 +49,11 @@ class Renderer(QFrame):
     pause_signal = pyqtSignal()
     analyzer = RunTimeAnalyser(frame_buffer=FRAMETIME_FRAMES)
 
-    def __init__(self, beatmap_info, replays, events, library, start_speed, \
+    def __init__(self, beatmap, replays, events, library, start_speed, \
         paint_info, statistic_functions):
         super().__init__()
         self.setMinimumSize(GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH*2, GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT*2)
+        self.beatmap = beatmap
         # list of timestamps to highlight the frames of in a different color
         self.events = events
         # whether to show some information about each player and their cursors
@@ -69,45 +70,23 @@ class Renderer(QFrame):
         # beatmap init stuff
         self.hitobjs_to_draw = []
 
-        if beatmap_info.path:
-            self.beatmap = Beatmap.from_path(beatmap_info.path)
-            self.hit_objects = self.beatmap.hit_objects()
+        use_hr = any([Mod.HR in replay.mods for replay in replays])
+        if beatmap:
+            self.hit_objects = beatmap.hit_objects(hard_rock=use_hr)
             self.playback_len = self.get_hit_endtime(self.hit_objects[-1])
-        elif beatmap_info.map_id:
-            # library is nullable - None means we define our own (and don't care about saving)
-            # TODO move temporary directory creation to slider probably, since
-            # this logic is now duplicated here and in circlecore
-            if library:
-                # TODO expose save as an option to the user somehow?
-                # might require a slider pr or just a change in approach for us
-                self.beatmap = library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
+
+            ar = beatmap.ar(hard_rock=use_hr)
+            # https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate for formulas
+            if ar <= 5:
+                self.preempt = 1200 + 600 * (5 - ar) / 5
+                self.fade_in = 800 + 400 * (5 - ar) / 5
             else:
-                temp_dir = TemporaryDirectory()
-                self.beatmap = Library(temp_dir.name).lookup_by_id(beatmap_info.map_id, download=True)
-            self.hit_objects = self.beatmap.hit_objects()
-            self.playback_len = self.get_hit_endtime(self.hit_objects[-1])
-        else:
-            self.playback_len = 0
+                self.preempt = 1200 - 750 * (ar - 5) / 5
+                self.fade_in = 800 - 500 * (ar - 5) / 5
 
-        self.has_beatmap = beatmap_info.available()
+            self.hitwindow = od_to_ms(beatmap.od(hard_rock=use_hr)).hit_50
 
-
-        # beatmap stuff
-        if self.has_beatmap:
-            # values taken from https://github.com/ppy/osu-wiki/blob/master/meta/unused/difficulty-settings.md
-            # but it was taken from the osu! wiki since then so this might be a bit incorrect.
-            if self.beatmap.approach_rate == 5:
-                self.preempt = 1200
-            elif self.beatmap.approach_rate < 5:
-                self.preempt = 1200 + 600 * (5 - self.beatmap.approach_rate) / 5
-            else:
-                self.preempt = 1200 - 750 * (self.beatmap.approach_rate - 5) / 5
-            self.hitwindow = od_to_ms(self.beatmap.overall_difficulty).hit_50
-            self.fade_in = 400
-            # for now we'll use the hr circle size if any replay has hr, TODO
-            # make this toggleable/an option somehow
-            use_hr = any([Mod.HR in replay.mods for replay in replays])
-            self.hitcircle_radius = circle_radius(self.beatmap.cs(hard_rock=use_hr))
+            self.hitcircle_radius = circle_radius(beatmap.cs(hard_rock=use_hr))
             ## loading stuff
             self.is_loading = True
             # not fully accurate, but good enough
@@ -116,9 +95,11 @@ class Renderer(QFrame):
             self.sliders_current = 0
             self.thread = threading.Thread(target=self.process_sliders)
             self.thread.start()
-
+            self.has_beatmap = True
         else:
+            self.playback_len = 0
             self.is_loading = False
+            self.has_beatmap = False
 
         # if this is nonnull, when we finish loading sliders we will seek to
         # this position. Set in ``seek_to`` if it is called when we're loading
@@ -135,11 +116,13 @@ class Renderer(QFrame):
                 Player(replay=replay,
                        pen=QPen(QColor().fromHslF(i / self.num_replays, 0.75, 0.5)),))
         self.playback_len = max(max(player.t) for player in self.players) if self.num_replays > 0 else self.playback_len
-        # flip all replays with hr
-        for player in self.players:
-            if Mod.HardRock in player.mods:
-                for d in player.xy:
-                    d[1] = 384 - d[1]
+        # if our hitobjs are hard_rock versions, flip any player *without* hr
+        # so they match other hr players.
+        if use_hr:
+            for player in self.players:
+                if Mod.HardRock not in player.mods:
+                    for d in player.xy:
+                        d[1] = 384 - d[1]
 
         # clock stuff
         self.clock = Timer(start_speed)
@@ -165,7 +148,7 @@ class Renderer(QFrame):
         self.draw_approach_circles = True
         # how many frames for each replay to draw on screen at a time
         self.num_frames_on_screen = 15
-        self.only_embolden_keydowns = False
+        self.only_color_keydowns = False
 
         self.next_frame()
 
@@ -217,9 +200,13 @@ class Renderer(QFrame):
             return
         self.next_frame()
 
-    def next_frame(self):
+    def next_frame(self, stepping_backwards=False):
         """
-        prepares next frame
+        Prepares the next frame.
+
+        If we have just set our current time to be less than what it was the
+        previous time next_frame was called, pass stepping_backwards=True so
+        the correct frame can be chosen when searching the frame list.
         """
         # just update the frame if currently loading
         if self.is_loading:
@@ -234,8 +221,18 @@ class Renderer(QFrame):
             self.pause_signal.emit()
             return
 
+        # This is the solution to the issue of stepping forward/backwards
+        # getting stuck on certain frames - we can fix it for stepping forward
+        # by always preferring the right side when searching our array, but when
+        # stepping backwards we need to prefer the left side instead.
+        side = "left" if stepping_backwards else "right"
         for player in self.players:
-            player.end_pos = np.searchsorted(player.t, current_time, "right") - 1
+            player.end_pos = np.searchsorted(player.t, current_time, side)
+            # for some reason side=right and side=left differ by 1 even when
+            # the array has no duplicates, so only account for that in the
+            # right side case
+            if side == "right":
+                player.end_pos -= 1
             player.start_pos = player.end_pos - self.num_frames_on_screen if player.end_pos >= self.num_frames_on_screen else 0
 
         if self.has_beatmap:
@@ -332,9 +329,9 @@ class Renderer(QFrame):
                 # grey out if we don't have a keypress at the start
                 if not bool(player.k[i]):
                     grey_out = True
-                # grey out if we're only emboldening keydowns and this is not a
+                # grey out if we're only coloring keydowns and this is not a
                 # keydown
-                if self.only_embolden_keydowns and not bool(player.keydowns[i]):
+                if self.only_color_keydowns and not bool(player.keydowns[i]):
                     grey_out = True
             self.draw_line((i - player.start_pos) * alpha_step, player.xy[i],
                     player.xy[i + 1], grey_out=grey_out)
@@ -348,9 +345,9 @@ class Renderer(QFrame):
             highlight = t in self.events
             # grey out only if no keys are held by default
             grey_out = not bool(k)
-            # but override if we're only emboldening keydowns and this is not a
+            # but override if we're only coloring keydowns and this is not a
             # keydown
-            if self.only_embolden_keydowns and not bool(player.keydowns[i]):
+            if self.only_color_keydowns and not bool(player.keydowns[i]):
                 grey_out = True
             self.draw_cross(alpha, xy, grey_out=grey_out, highlight=highlight)
         # reset alpha
@@ -700,8 +697,9 @@ class Renderer(QFrame):
 
     def search_nearest_frame(self, reverse=False):
         """
-        Args:
-            Boolean reverse: chooses the search direction
+        Args
+            Boolean reverse: whether to search backwards or forwards through
+                time
         """
         if not reverse:
             next_frames = []
@@ -711,6 +709,11 @@ class Renderer(QFrame):
                 if pos == len(player.xy):
                     pos -= 1
                 next_frames.append(player.t[pos])
+            # if we're only visualizing a beatmap and there's no replays, and
+            # someone tries to advance or retreat frames, min() / max() will
+            # crash because next_frames is empty, so avoid this.
+            if not next_frames:
+                return
             self.seek_to(min(next_frames))
         else:
             prev_frames = []
@@ -720,15 +723,19 @@ class Renderer(QFrame):
                 if pos == -1:
                     pos += 1
                 prev_frames.append(player.t[pos])
-            self.seek_to(max(prev_frames))
+            if not prev_frames:
+                return
+            self.seek_to(max(prev_frames), seeking_backwards=True)
 
-    def seek_to(self, position):
+    def seek_to(self, position, seeking_backwards=False):
         """
         Seeks to position if the change is bigger than ± 10.
         Also calls next_frame() so the correct frame is displayed.
 
         Args:
             Integer position: position to seek to in ms
+            Boolean seeking_backwards: Whether we're seeking to a time before
+                our current time.
         """
         self.clock.time_counter = position
         # if we want to seek somewhere while we're loading sliders, we store
@@ -736,12 +743,25 @@ class Renderer(QFrame):
         if self.is_loading:
             self.seek_to_when_loaded = position
         if self.paused:
-            self.next_frame()
+            self.next_frame(stepping_backwards=seeking_backwards)
 
     def wheelEvent(self, event):
-        # support scrolling both vertically or horizontally, just respect
-        # whichever is greatest for that event
-        delta = max(event.pixelDelta().x(), event.pixelDelta().y(), key=abs)
+        # from the qt docs on pixelDelta: "This value is provided on platforms
+        # that support high-resolution pixel-based delta values, such as macOS".
+        # Since not every OS provides pixelDelta, we should use it if possible
+        # but fall back to angleDelta. From my testing (sample size 1)
+        # pixelDelta will have both x and y as zero if it's unsupported.
+        if event.pixelDelta().x() == 0 and event.pixelDelta().y() == 0:
+            # check both x and y to support users scrolling either vertically or
+            # horizontally to move the timeline, just respect whichever is
+            # greatest for that event.
+            # this /5 is an arbitrary value to slow down scrolling to what
+            # feels reasonable. TODO expose as a setting to the user ("scrolling
+            # sensitivity")
+            delta = max(event.angleDelta().x(), event.angleDelta().y(), key=abs) / 5
+        else:
+            delta = max(event.angleDelta().x(), event.angleDelta().y(), key=abs)
+
         self.seek_to(self.clock.time_counter + delta)
 
     def get_hit_endtime(self, hitobj):
@@ -787,8 +807,8 @@ class Renderer(QFrame):
         # redraw everything for the new raw view
         self.update()
 
-    def only_embolden_keydowns_changed(self, new_state):
-        self.only_embolden_keydowns = new_state
+    def only_color_keydowns_changed(self, new_state):
+        self.only_color_keydowns = new_state
         self.update()
 
     def hitobjects_changed(self, new_state):
