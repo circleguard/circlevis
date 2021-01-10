@@ -1,5 +1,6 @@
 import math
 import threading
+from datetime import timedelta
 
 import numpy as np
 from PyQt5.QtGui import QBrush, QPen, QColor, QPalette, QPainter, QPainterPath
@@ -401,6 +402,21 @@ class Renderer(QFrame):
                 except IndexError: # Edge case where we only have data from one cursor
                     pass
 
+            if self.num_replays == 1 and self.has_beatmap:
+                y += 13
+                player = self.players[0]
+                current_t = timedelta(milliseconds=int(self.clock.get_time()))
+                closest_hitobj = self.beatmap.closest_hitobject(current_t)
+                distance = self.distance_between(player.xy[player.end_pos], closest_hitobj)
+
+                # show "x px inside hitobj" instead of a negative distance
+                inside = False
+                if distance < 0:
+                    inside = True
+                    distance = abs(distance)
+
+                self.painter.drawText(5, y, f"{distance:0.2f}px {'inside' if inside else 'from'} closest hitobj")
+
             for function in self.statistic_functions:
                 y += 13
                 xys = [player.xy for player in self.players]
@@ -769,6 +785,18 @@ class Renderer(QFrame):
 
     def toggle_frametime(self):
         self.paint_frametime = not self.paint_frametime
+
+    def distance_between(self, point, hitobject):
+        """
+        The shortest distance between the given point and hitobject.
+        """
+        # TODO use numpy for these calculations
+        x1 = point[0]
+        y1 = point[1]
+        x2 = hitobject.position.x
+        y2 = hitobject.position.y
+        r = self.hitcircle_radius
+        return math.sqrt((((x2 - x1) ** 2) + (y2 - y1) ** 2)) - r
 
     def raw_view_changed(self, new_state):
         self.raw_view = new_state
