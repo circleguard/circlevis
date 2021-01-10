@@ -791,16 +791,13 @@ class Renderer(QFrame):
         """
         The shortest distance between the given point and hitobject.
         """
+        # TODO use numpy for these calculations
         x1 = point[0]
         y1 = point[1]
         x2 = hitobject.position.x
         y2 = hitobject.position.y
         r = self.hitcircle_radius
-        dist = math.sqrt((((x2 - x1) ** 2) + (y2 - y1) ** 2)) - r
-        # make 0 if negative (any point inside the circle has "0" distance to
-        # that circle)
-        # dist = max(dist, 0)
-        return dist
+        return math.sqrt((((x2 - x1) ** 2) + (y2 - y1) ** 2)) - r
 
     def raw_view_changed(self, new_state):
         self.raw_view = new_state
