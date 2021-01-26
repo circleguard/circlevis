@@ -115,6 +115,10 @@ class Renderer(QFrame):
                 Player(replay=replay,
                        pen=QPen(QColor().fromHslF(i / self.num_replays, 0.75, 0.5)),))
         self.playback_end = max(max(player.t) for player in self.players) if self.num_replays > 0 else self.playback_end
+        self.playback_start = min(min(player.t) for player in self.players) if self.num_replays > 0 else 0
+        # force 0 for replays with no negative frames
+        self.playback_start = min(self.playback_start, 0)
+
         # if our hitobjs are hard_rock versions, flip any player *without* hr
         # so they match other hr players.
         if self.use_hr:
@@ -216,7 +220,7 @@ class Renderer(QFrame):
         current_time = self.clock.get_time()
         # if we're at the end of the track or are at the beginning of the track
         # (and thus are reversing), pause and dont update
-        if current_time > self.playback_end or current_time < 0:
+        if current_time > self.playback_end or current_time < self.playback_start:
             self.pause_signal.emit()
             return
 
