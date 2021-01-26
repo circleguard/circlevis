@@ -358,7 +358,7 @@ class Renderer(QFrame):
 
     def paint_info(self):
         """
-        Draws various Information.
+        Draws various info about the replays in the upper left corner.
 
         Args:
            QPainter painter: The painter.
