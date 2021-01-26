@@ -72,7 +72,7 @@ class Renderer(QFrame):
         self.use_hr = any([Mod.HR in replay.mods for replay in replays])
         if beatmap:
             self.hit_objects = beatmap.hit_objects(hard_rock=self.use_hr)
-            self.playback_len = self.get_hit_endtime(self.hit_objects[-1])
+            self.playback_end = self.get_hit_endtime(self.hit_objects[-1])
 
             ar = beatmap.ar(hard_rock=self.use_hr)
             # https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate for formulas
@@ -96,7 +96,7 @@ class Renderer(QFrame):
             self.thread.start()
             self.has_beatmap = True
         else:
-            self.playback_len = 0
+            self.playback_end = 0
             self.is_loading = False
             self.has_beatmap = False
 
@@ -114,7 +114,7 @@ class Renderer(QFrame):
             self.players.append(
                 Player(replay=replay,
                        pen=QPen(QColor().fromHslF(i / self.num_replays, 0.75, 0.5)),))
-        self.playback_len = max(max(player.t) for player in self.players) if self.num_replays > 0 else self.playback_len
+        self.playback_end = max(max(player.t) for player in self.players) if self.num_replays > 0 else self.playback_end
         # if our hitobjs are hard_rock versions, flip any player *without* hr
         # so they match other hr players.
         if self.use_hr:
@@ -216,7 +216,7 @@ class Renderer(QFrame):
         current_time = self.clock.get_time()
         # if we're at the end of the track or are at the beginning of the track
         # (and thus are reversing), pause and dont update
-        if current_time > self.playback_len or current_time < 0:
+        if current_time > self.playback_end or current_time < 0:
             self.pause_signal.emit()
             return
 

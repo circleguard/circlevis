@@ -77,7 +77,7 @@ class Interface(QWidget):
         self.controls.speed_down_button.clicked.connect(self.lower_speed)
         self.controls.copy_to_clipboard_button.clicked.connect(self.copy_to_clipboard)
         self.controls.time_slider.sliderMoved.connect(self.renderer.seek_to)
-        self.controls.time_slider.setRange(0, self.renderer.playback_len)
+        self.controls.time_slider.setRange(self.renderer.playback_start, self.renderer.playback_end)
 
         self.controls.raw_view_changed.connect(self.renderer.raw_view_changed)
         self.controls.only_color_keydowns_changed.connect(self.renderer.only_color_keydowns_changed)
