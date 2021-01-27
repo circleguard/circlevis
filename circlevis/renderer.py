@@ -126,7 +126,7 @@ class Renderer(QFrame):
                         d[1] = 384 - d[1]
 
         # clock stuff
-        self.clock = Timer(start_speed)
+        self.clock = Timer(start_speed, self.playback_start)
         self.paused = False
         self.play_direction = 1
 

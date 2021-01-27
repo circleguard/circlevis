@@ -2,8 +2,9 @@ import time
 
 
 class Timer:
-    def __init__(self, speed):
-        self.time_counter = 0
+    def __init__(self, speed, initial_time):
+        self.initial_time = initial_time
+        self.time_counter = self.initial_time
         self.current_speed = speed
         self.paused = False
         self.paused_at_run_time = None
@@ -31,7 +32,7 @@ class Timer:
         return self.get_time()
 
     def reset(self):
-        self.time_counter = 0
+        self.time_counter = self.initial_time
         # preserve paused state when resetting
         self.paused = self.paused
         self.paused_at_run_time = time.perf_counter_ns()
