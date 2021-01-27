@@ -12,7 +12,6 @@ from slider.mod import circle_radius, od_to_ms
 from circleguard import Mod, Key
 
 from circlevis.clock import Timer
-from circlevis.runtime_tracker import RunTimeAnalyser
 from circlevis.beatmap_info import BeatmapInfo
 from circlevis.player import Player
 
@@ -46,7 +45,6 @@ SLIDER_TICKRATE = 50
 class Renderer(QFrame):
     update_time_signal = pyqtSignal(int)
     pause_signal = pyqtSignal()
-    analyzer = RunTimeAnalyser(frame_buffer=FRAMETIME_FRAMES)
 
     def __init__(self, beatmap, replays, events, library, start_speed, \
         paint_info, statistic_functions):
@@ -298,9 +296,7 @@ class Renderer(QFrame):
         if self.should_paint_info:
             self.paint_info()
         if self.paint_frametime:
-            self.analyzer.new_frame()
             self.paint_frametime_graph()
-        self.analyzer.enabled = self.paint_frametime
         self.painter.end()
 
     def paint_cursor(self, player):
@@ -430,47 +426,6 @@ class Renderer(QFrame):
                 result = function(xys, indices)
                 self.painter.drawText(5, y, f"{function.__name__}: {result}")
 
-    def paint_frametime_graph(self):
-        x_offset = self.width()
-        height = self.height()
-        width = self.width()
-        length = FRAMETIME_FRAMES * FRAMETIME_STEPS
-        self.painter.setBrush(BRUSH_DARKGRAY)
-        self.painter.setOpacity(0.75)
-        self.painter.drawRect(width - length, height - 100, 360, 100)
-        self.painter.setBrush(BRUSH_BLANK)
-        # line routine, draws 60/30/15 fps lines
-        PEN_GRAY.setWidth(1)
-        self.painter.setPen(PEN_GRAY)
-        self.painter.setOpacity(1)
-        ref_path = QPainterPath()
-        ref_path.moveTo(width - length, height - 17)
-        ref_path.lineTo(width,  height - 17)
-        ref_path.moveTo(width - length, height - 33)
-        ref_path.lineTo(width, height - 33)
-        ref_path.moveTo(width - length, height - 67)
-        ref_path.lineTo(width, height - 67)
-        self.painter.drawPath(ref_path)
-        # draw frame time graph
-        PEN_WHITE.setWidth(1)
-        self.painter.setPen(PEN_WHITE)
-        frame_path = QPainterPath()
-        frames = self.analyzer.get_frames()
-        frame_path.moveTo(x_offset, max(height - 100, height - frames[0]["total"]))
-        for frame in frames:
-            x_offset -= FRAMETIME_STEPS
-            frame_path.lineTo(x_offset, max(height - 100, height - frame["total"]))
-        self.painter.drawPath(frame_path)
-        # draw fps & ms
-        objects = frames[0]
-        ms = frames[0]["total"]
-        fps = 1000 / ms
-        self.painter.drawText(width - length + 5, height - 100 + 12, f"fps:{int(fps)}")
-        self.painter.drawText(width - length + 5, height - 100 + 22, "{:.2f}ms".format(ms))
-
-        for i in range(len(objects)):
-            current_key = list(objects.keys())[i]
-            self.painter.drawText(width - length/2, height - 100 - 6-10*i, "{}: {:.2f}ms".format(current_key, objects[current_key]))
 
     def draw_line(self, alpha, start, end, grey_out=False):
         """
@@ -549,7 +504,6 @@ class Renderer(QFrame):
         if isinstance(hitobj, Spinner):
             self.draw_spinner(hitobj)
 
-    @analyzer.track
     def draw_hitcircle(self, hitobj):
         """
         Draws Hitcircle.
@@ -577,7 +531,6 @@ class Renderer(QFrame):
         self.painter.drawEllipse(self.scaled_point(p.x, p.y), r, r)
         self.painter.setBrush(BRUSH_BLANK)
 
-    @analyzer.track
     def draw_spinner(self, hitobj):
         """
         Draws Spinner.
@@ -601,7 +554,6 @@ class Renderer(QFrame):
         self.painter.setOpacity(opacity)
         self.painter.drawEllipse(self.scaled_point(GAMEPLAY_WIDTH / 2, GAMEPLAY_HEIGHT / 2), self.scaled_number(radius), self.scaled_number(radius))
 
-    @analyzer.track
     def draw_approachcircle(self, hitobj):
         """
         Draws Approachcircle.
@@ -626,7 +578,6 @@ class Renderer(QFrame):
         self.painter.setOpacity(opacity)
         self.painter.drawEllipse(self.scaled_point(p.x, p.y), r, r)
 
-    @analyzer.track
     def draw_slider(self, hitobj):
         """
         Draws sliderbody and hitcircle & approachcircle if needed
