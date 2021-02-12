@@ -6,13 +6,11 @@ import numpy as np
 from PyQt5.QtGui import QBrush, QPen, QColor, QPalette, QPainter, QPainterPath
 from PyQt5.QtWidgets import QFrame
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPointF, QRectF
-from slider import Beatmap, Library
 from slider.beatmap import Circle, Slider, Spinner
 from slider.mod import circle_radius, od_to_ms
 from circleguard import Mod, Key
 
 from circlevis.clock import Timer
-from circlevis.beatmap_info import BeatmapInfo
 from circlevis.player import Player
 
 WIDTH_LINE = 1
