@@ -66,11 +66,12 @@ class Renderer(QFrame):
         self.hitobjs_to_draw = []
 
         self.use_hr = any([Mod.HR in replay.mods for replay in replays])
+        self.use_ez = any([Mod.EZ in replay.mods for replay in replays])
         if beatmap:
-            self.hit_objects = beatmap.hit_objects(hard_rock=self.use_hr)
+            self.hit_objects = beatmap.hit_objects(hard_rock=self.use_hr, easy=self.use_ez)
             self.playback_end = self.get_hit_endtime(self.hit_objects[-1])
 
-            ar = beatmap.ar(hard_rock=self.use_hr)
+            ar = beatmap.ar(hard_rock=self.use_hr, easy=self.use_ez)
             # https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate for formulas
             if ar <= 5:
                 self.preempt = 1200 + 600 * (5 - ar) / 5
@@ -79,10 +80,10 @@ class Renderer(QFrame):
                 self.preempt = 1200 - 750 * (ar - 5) / 5
                 self.fade_in = 800 - 500 * (ar - 5) / 5
 
-            self.hitwindow = od_to_ms(beatmap.od(hard_rock=self.use_hr)).hit_50
+            self.hitwindow = od_to_ms(beatmap.od(hard_rock=self.use_hr, easy=self.use_ez)).hit_50
 
-            self.hitcircle_radius = circle_radius(beatmap.cs(hard_rock=self.use_hr))
-            ## loading stuff
+            self.hitcircle_radius = circle_radius(beatmap.cs(hard_rock=self.use_hr, easy=self.use_ez))
+            # loading stuff
             self.is_loading = True
             # not fully accurate, but good enough
             self.num_hitobjects = len(self.hit_objects)
