@@ -14,13 +14,13 @@ with open("circlevis/version.py") as f:
     if match:
         VERSION = match.group(1)
     else:
-        raise RuntimeError("Unable to find version string in circlevis/version.py")
+        raise RuntimeError("Unable to find version string in "
+            "circlevis/version.py")
 
 setup(
     name="circlevis",
     version=VERSION,
-    description="A Qt Widget that displays a beatmap, and an arbitrary amount "
-                "of replays.",
+    description="A Qt Widget for visualizing osu! beatmaps and replays.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     classifiers=[
