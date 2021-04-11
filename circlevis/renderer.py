@@ -1,11 +1,13 @@
 import math
 import threading
 from datetime import timedelta
+from dataclasses import dataclass
 
 import numpy as np
-from PyQt5.QtGui import QBrush, QPen, QColor, QPalette, QPainter, QPainterPath
-from PyQt5.QtWidgets import QFrame
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPointF, QRectF
+from PyQt5.QtGui import (QBrush, QPen, QColor, QPalette, QPainter, QPainterPath,
+    QCursor)
+from PyQt5.QtWidgets import QFrame, QApplication
+from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPointF, QRectF, QRect
 from slider.beatmap import Circle, Slider, Spinner
 from slider.mod import circle_radius, od_to_ms
 from circleguard import Mod, Key
@@ -60,12 +62,22 @@ class Renderer(QFrame):
         self.scale = 1
         self.x_offset = 0
         self.y_offset = 0
+        # a map of QRect to Player, where the rectangle is the location of the
+        # player's info on the screen. Updated every frame (even though it's
+        # currently static except for the width, it may differ from frame to
+        # frame in the future)
+        self.player_info_positions = {}
+        # players that have been disabled by the users and we don't want to
+        # draw cursor movements for
+        self.disabled_players = []
+
+        self.setMouseTracking(True)
 
         # beatmap init stuff
         self.hitobjs_to_draw = []
 
-        self.use_hr = any([Mod.HR in replay.mods for replay in replays])
-        self.use_ez = any([Mod.EZ in replay.mods for replay in replays])
+        self.use_hr = any(Mod.HR in replay.mods for replay in replays)
+        self.use_ez = any(Mod.EZ in replay.mods for replay in replays)
         if beatmap:
             self.hit_objects = beatmap.hit_objects(hard_rock=self.use_hr, easy=self.use_ez)
             self.playback_end = self.get_hit_endtime(self.hit_objects[-1])
@@ -304,6 +316,9 @@ class Renderer(QFrame):
         Arguments:
             Player player: player to draw the cursor of.
         """
+        # don't draw anything if the player is disabled
+        if player in self.disabled_players:
+            return
         alpha_step = 1 / self.num_frames_on_screen
         pen = player.pen
         width = WIDTH_LINE_RAW_VIEW if self.raw_view else WIDTH_LINE
@@ -374,20 +389,39 @@ class Renderer(QFrame):
         self.painter.setOpacity(1)
         self.painter.drawText(5, y, f"{round(self.clock.get_time())} ms")
 
+        self.player_info_positions = {}
         if self.num_replays > 0:
             for player in self.players:
+                def _set_opacity(opacity):
+                    if player in self.disabled_players:
+                        opacity /= 2.4
+                    self.painter.setOpacity(opacity)
+
                 y += 13
                 pen = player.pen
                 self.painter.setPen(PEN_BLANK)
                 self.painter.setBrush(QBrush(pen.color()))
-                self.painter.setOpacity(1 if Key.M1 in Key(int(player.k[player.end_pos])) else 0.3)
+                _set_opacity(1 if Key.M1 in Key(int(player.k[player.end_pos])) else 0.3)
                 self.painter.drawRect(5, y - 9, 10, 10)
-                self.painter.setOpacity(1 if Key.M2 in Key(int(player.k[player.end_pos])) else 0.3)
+                _set_opacity(1 if Key.M2 in Key(int(player.k[player.end_pos])) else 0.3)
                 self.painter.drawRect(18, y - 9, 10, 10)
-                self.painter.setOpacity(1)
+                _set_opacity(1)
                 self.painter.setPen(pen)
-                self.painter.drawText(31, y, f"{player.username} {player.mods.short_name()}: "
+                info_text = (f"{player.username} {player.mods.short_name()}: "
                     f"{player.xy[player.end_pos][0]:.2f}, {player.xy[player.end_pos][1]:.2f}")
+                self.painter.drawText(31, y, info_text)
+                # not sure why we need to do ``y - 9`` instead of 9 here,
+                # our ``drawText`` call is perfectly happy to accept ``y`` but
+                # we need to pass ``y - 9`` to our ``drawRect`` calls...maybe 9
+                # was a manually determined number that causes the text to align
+                # with the drawn boxes?
+                info_pos = self.painter.boundingRect(5, y - 9, 0, 0, 0, info_text)
+                info_pos = Rect(info_pos.x(), info_pos.y(), info_pos.width(), info_pos.height())
+                # unfortunately the rects overlap if we don't make this manual
+                # adjustment; would like to fiigure out why but this works for
+                # now.
+                info_pos.height -= 3
+                self.player_info_positions[info_pos] = player
 
             self.painter.setPen(PEN_WHITE)
             if self.num_replays == 2:
@@ -720,8 +754,30 @@ class Renderer(QFrame):
 
         self.seek_to(self.clock.time_counter + delta)
 
+    def mouseMoveEvent(self, event):
+        any_inside = False
+        for rect in self.player_info_positions:
+            qrect = rect.toQRect()
+            if qrect.contains(event.pos()):
+                any_inside = True
+                self.setCursor(QCursor(Qt.PointingHandCursor))
+        if not any_inside:
+            self.setCursor(QCursor(Qt.ArrowCursor))
+        return super().mouseMoveEvent(event)
+
     def mousePressEvent(self, event):
-        print(event.x(), event.y())
+        for rect in self.player_info_positions:
+            qrect = rect.toQRect()
+            if qrect.contains(event.pos()):
+                player = self.player_info_positions[rect]
+                # toggle its membership in disabled_players, so users can click
+                # a second time to re-enable a player
+                if player in self.disabled_players:
+                    self.disabled_players.remove(player)
+                else:
+                    self.disabled_players.append(player)
+                self.update()
+        return super().mousePressEvent(event)
 
     def get_hit_endtime(self, hitobj):
         return hitobj.end_time.total_seconds() * 1000 if not isinstance(hitobj, Circle) else self.get_hit_time(hitobj)
@@ -788,3 +844,20 @@ class Renderer(QFrame):
         use_ez = new_value == "EZ"
         self.hitcircle_radius = circle_radius(self.beatmap.cs(hard_rock=use_hr, easy=use_ez))
         self.update()
+
+
+# not sure why dataclass won't generate a hash method for us automatically,
+# we're not using anything mutable, just ints
+@dataclass(unsafe_hash=True)
+class Rect:
+    """
+    A dataclass which mimics ``QRect`` and only serves as a hashable liaison of
+    ``QRect``.
+    """
+    x: int
+    y: int
+    width: int
+    height: int
+
+    def toQRect(self):
+        return QRect(self.x, self.y, self.width, self.height)
