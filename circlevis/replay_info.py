@@ -1,14 +1,11 @@
 from functools import partial
-import math
 
 from PyQt5.QtWidgets import (QLabel, QVBoxLayout, QFrame, QAbstractItemView,
     QTableWidget, QTableWidgetItem)
 from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QFont, QCursor
-from circleguard import KeylessCircleguard, Snap, Hit, Mod
+from PyQt5.QtGui import QCursor
+from circleguard import KeylessCircleguard, Snap, Hit
 from circleguard.utils import convert_statistic
-from slider.mod import circle_radius
-import numpy as np
 
 from circlevis.widgets import PushButton
 
@@ -24,8 +21,8 @@ class ReplayInfo(QFrame):
     # in pixels
     EDGE_HIT_THRESH = 3
 
-    def __init__(self, replay, beatmap, slider_dir, ur=None, \
-        frametime=None, snaps=None, edge_hits=None, snaps_args={}):
+    def __init__(self, replay, slider_dir, ur=None, frametime=None, \
+        snaps=None,edge_hits=None, snaps_args={}):
         """
         If passed, the `ur`, `frametime`, `snaps`, and
         `hits` parameters will be used instead of recalculating them from

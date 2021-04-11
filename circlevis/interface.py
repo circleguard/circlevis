@@ -181,7 +181,8 @@ class Interface(QWidget):
             replay_info.show()
         else:
             ur, frametime, snaps, edge_hits = self.replay_statistics_precalculated[replay]
-            replay_info = ReplayInfo(replay, self.beatmap, self.library.path, ur, frametime, snaps, edge_hits, self.snaps_args)
+            replay_info = ReplayInfo(replay, self.library.path, ur, frametime,
+                snaps, edge_hits, self.snaps_args)
             replay_info.seek_to.connect(self.renderer.seek_to)
 
         # don't show two of the same info panels at once
