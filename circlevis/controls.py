@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (QFrame, QPushButton, QSlider, QGridLayout, QLabel,
     QVBoxLayout, QCheckBox, QHBoxLayout, QSpinBox, QComboBox,
     QStyleOptionComboBox, QStyle)
-from PyQt5.QtGui import QIcon, QPainter
+from PyQt5.QtGui import QIcon, QPainter, QCursor
 from PyQt5.QtCore import Qt, pyqtSignal
 from circleguard import Mod, Replay
 
@@ -21,7 +21,7 @@ class VisualizerControls(QFrame):
         super().__init__()
         self.replays = replays
 
-        self.time_slider = QSlider(Qt.Horizontal)
+        self.time_slider = JumpSlider(Qt.Horizontal)
         self.time_slider.setValue(0)
         self.time_slider.setFixedHeight(20)
         self.time_slider.setStyleSheet("outline: none;")
@@ -230,7 +230,7 @@ class SliderSetting(QFrame):
         super().__init__()
 
         label = QLabel(text)
-        self.slider = QSlider(Qt.Horizontal)
+        self.slider = JumpSlider(Qt.Horizontal)
         self.slider.setValue(start_value)
         self.slider.setRange(min_, max_)
         self.slider.valueChanged.connect(self._value_changed)
@@ -281,3 +281,29 @@ class ComboBoxSetting(QFrame):
 
     def _value_changed(self):
         self.value_changed.emit(self.combobox.currentData())
+
+
+# A slider which moves directly to the clicked position when clicked
+# Implementation from https://stackoverflow.com/a/29639127/12164878
+class JumpSlider(QSlider):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.setCursor(QCursor(Qt.PointingHandCursor))
+
+    def mousePressEvent(self, event):
+        self.setValue(QStyle.sliderValueFromPosition(self.minimum(),
+            self.maximum(), event.x(), self.width()))
+        # our code relies on `sliderMoved` in order to only trigger on user
+        # input and not when we change the slider's value from the code (we
+        # update the slider's value every frame as we progress along the
+        # replay). Since the user *has* initiated this movement, emit
+        # `sliderMoved` to let our code know.
+        # TODO This should probably be done via a custom qsignal
+        # (userChangedValue) instead of re-purposing an existing one that wasn't
+        # meant for that purpose.
+        self.sliderMoved.emit(self.value())
+
+    def mouseMoveEvent(self, event):
+        self.setValue(QStyle.sliderValueFromPosition(self.minimum(),
+            self.maximum(), event.x(), self.width()))
+        self.sliderMoved.emit(self.value())
