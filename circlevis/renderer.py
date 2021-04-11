@@ -44,8 +44,8 @@ class Renderer(QFrame):
     update_time_signal = pyqtSignal(int)
     pause_signal = pyqtSignal()
 
-    def __init__(self, beatmap, replays, events, library, start_speed, \
-        paint_info, statistic_functions):
+    def __init__(self, beatmap, replays, events, start_speed, paint_info, \
+        statistic_functions):
         super().__init__()
         self.setMinimumSize(GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH*2, GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT*2)
         self.beatmap = beatmap

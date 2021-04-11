@@ -53,8 +53,8 @@ class Interface(QWidget):
             self.beatmap = self.library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
 
 
-        self.renderer = Renderer(self.beatmap, replays, events, library, \
-            start_speed, paint_info, statistic_functions)
+        self.renderer = Renderer(self.beatmap, replays, events, start_speed,
+            paint_info, statistic_functions)
         self.renderer.update_time_signal.connect(self.update_slider)
         # if the renderer wants to pause itself (eg when the playback hits the
         # end of the replay), we kick it back to us (the `Interface`) so we can
