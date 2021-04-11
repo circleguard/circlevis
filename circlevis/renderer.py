@@ -418,7 +418,7 @@ class Renderer(QFrame):
                 info_pos = self.painter.boundingRect(5, y - 9, 0, 0, 0, info_text)
                 info_pos = Rect(info_pos.x(), info_pos.y(), info_pos.width(), info_pos.height())
                 # unfortunately the rects overlap if we don't make this manual
-                # adjustment; would like to fiigure out why but this works for
+                # adjustment; would like to figure out why but this works for
                 # now.
                 info_pos.height -= 3
                 # our bounding rect starts at 5 but the text starts at 31, so
