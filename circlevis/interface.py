@@ -186,7 +186,7 @@ class Interface(QWidget):
             replay_info.seek_to.connect(self.renderer.seek_to)
 
         # don't show two of the same info panels at once
-        if self.current_replay_info != None:
+        if self.current_replay_info is not None:
             # if they're the same, don't change anything
             if replay_info == self.current_replay_info:
                 return
