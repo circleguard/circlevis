@@ -784,7 +784,7 @@ class Renderer(QFrame):
             # cs doesn't matter to us if we don't have a beatmap (and we don't
             # have the attributes necessary to compute it anyway)
             return
-        use_hr = True if new_value == "HR" else False
-        use_ez = True if new_value == "EZ" else False
+        use_hr = new_value == "HR"
+        use_ez = new_value == "EZ"
         self.hitcircle_radius = circle_radius(self.beatmap.cs(hard_rock=use_hr, easy=use_ez))
         self.update()
