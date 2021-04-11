@@ -47,7 +47,8 @@ class Renderer(QFrame):
     def __init__(self, beatmap, replays, events, start_speed, paint_info, \
         statistic_functions):
         super().__init__()
-        self.setMinimumSize(GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH*2, GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT*2)
+        self.setMinimumSize(GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH * 2,
+            GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT * 2)
         self.beatmap = beatmap
         # list of timestamps to highlight the frames of in a different color
         self.events = events
@@ -640,14 +641,14 @@ class Renderer(QFrame):
         self.painter.drawPath(loading_bar)
 
     def draw_loading_screen(self):
-        self.painter.drawText(self.width() / 2 - 75, self.height() / 2 - 10, f"Calculating Sliders, please wait...")
+        self.painter.drawText(self.width() / 2 - 75, self.height() / 2 - 10, "Calculating Sliders, please wait...")
         self.draw_progressbar(int((self.sliders_current / self.num_sliders) * 100))
 
     def process_sliders(self):
         for i, hitobj in enumerate(self.hit_objects):
             self.sliders_current = i
             if isinstance(hitobj, Slider):
-                steps = max(2, int((self.get_hit_endtime(hitobj) - self.get_hit_time(hitobj))/SLIDER_TICKRATE))
+                steps = max(2, int((self.get_hit_endtime(hitobj) - self.get_hit_time(hitobj)) / SLIDER_TICKRATE))
                 hitobj.slider_body = [hitobj.curve(i / steps) for i in range(steps + 1)]
 
     def search_nearest_frame(self, reverse=False):
