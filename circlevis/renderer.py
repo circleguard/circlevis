@@ -423,6 +423,7 @@ class Renderer(QFrame):
                 info_pos.height -= 3
                 self.player_info_positions[info_pos] = player
 
+            self.painter.setOpacity(1)
             self.painter.setPen(PEN_WHITE)
             if self.num_replays == 2:
                 try:
