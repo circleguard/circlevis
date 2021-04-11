@@ -386,7 +386,8 @@ class Renderer(QFrame):
                 self.painter.drawRect(18, y - 9, 10, 10)
                 self.painter.setOpacity(1)
                 self.painter.setPen(pen)
-                self.painter.drawText(31, y, f"{player.username} {player.mods.short_name()}: {player.xy[player.end_pos][0]:.2f}, {player.xy[player.end_pos][1]:.2f}")
+                self.painter.drawText(31, y, f"{player.username} {player.mods.short_name()}: "
+                    f"{player.xy[player.end_pos][0]:.2f}, {player.xy[player.end_pos][1]:.2f}")
 
             self.painter.setPen(PEN_WHITE)
             if self.num_replays == 2:
@@ -550,7 +551,8 @@ class Renderer(QFrame):
         PEN_WHITE.setWidth(self.scaled_number(WIDTH_CIRCLE_BORDER / 2))
         self.painter.setPen(PEN_WHITE)
         self.painter.setOpacity(opacity)
-        self.painter.drawEllipse(self.scaled_point(GAMEPLAY_WIDTH / 2, GAMEPLAY_HEIGHT / 2), self.scaled_number(radius), self.scaled_number(radius))
+        self.painter.drawEllipse(self.scaled_point(GAMEPLAY_WIDTH / 2, GAMEPLAY_HEIGHT / 2),
+            self.scaled_number(radius), self.scaled_number(radius))
 
     def draw_approachcircle(self, hitobj):
         """
@@ -717,6 +719,9 @@ class Renderer(QFrame):
             delta = max(event.angleDelta().x(), event.angleDelta().y(), key=abs)
 
         self.seek_to(self.clock.time_counter + delta)
+
+    def mousePressEvent(self, event):
+        print(event.x(), event.y())
 
     def get_hit_endtime(self, hitobj):
         return hitobj.end_time.total_seconds() * 1000 if not isinstance(hitobj, Circle) else self.get_hit_time(hitobj)
