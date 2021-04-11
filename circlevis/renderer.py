@@ -421,6 +421,9 @@ class Renderer(QFrame):
                 # adjustment; would like to fiigure out why but this works for
                 # now.
                 info_pos.height -= 3
+                # our bounding rect starts at 5 but the text starts at 31, so
+                # we need to increase the width by the difference to account
+                info_pos.width += 31 - 5
                 self.player_info_positions[info_pos] = player
 
             self.painter.setOpacity(1)
