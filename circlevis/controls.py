@@ -1,11 +1,11 @@
-from PyQt5.QtWidgets import (QFrame, QPushButton, QSlider, QGridLayout, QLabel,
-    QVBoxLayout, QCheckBox, QHBoxLayout, QSpinBox, QComboBox,
-    QStyleOptionComboBox, QStyle)
-from PyQt5.QtGui import QIcon, QPainter, QCursor
+from PyQt5.QtWidgets import (QFrame, QGridLayout, QLabel, QVBoxLayout)
+from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import Qt, pyqtSignal
 from circleguard import Mod, Replay
 
 from circlevis.utils import resource_path
+from circlevis.widgets import (JumpSlider, PushButton, CheckboxSetting,
+    ComboBoxSetting, SliderSetting, ComboBox)
 
 class VisualizerControls(QFrame):
     raw_view_changed = pyqtSignal(bool)
@@ -26,32 +26,32 @@ class VisualizerControls(QFrame):
         self.time_slider.setFixedHeight(20)
         self.time_slider.setStyleSheet("outline: none;")
 
-        self.play_reverse_button = QPushButton()
+        self.play_reverse_button = PushButton()
         self.play_reverse_button.setIcon(QIcon(resource_path("play_reverse.png")))
         self.play_reverse_button.setFixedSize(20, 20)
         self.play_reverse_button.setToolTip("Play in reverse")
 
-        self.play_normal_button = QPushButton()
+        self.play_normal_button = PushButton()
         self.play_normal_button.setIcon(QIcon(resource_path("play_normal.png")))
         self.play_normal_button.setFixedSize(20, 20)
         self.play_normal_button.setToolTip("Play normally")
 
-        self.next_frame_button = QPushButton()
+        self.next_frame_button = PushButton()
         self.next_frame_button.setIcon(QIcon(resource_path("frame_next.png")))
         self.next_frame_button.setFixedSize(20, 20)
         self.next_frame_button.setToolTip("Move forward one frame")
 
-        self.previous_frame_button = QPushButton()
+        self.previous_frame_button = PushButton()
         self.previous_frame_button.setIcon(QIcon(resource_path("frame_back.png")))
         self.previous_frame_button.setFixedSize(20, 20)
         self.previous_frame_button.setToolTip("Move backward one frame")
 
-        self.pause_button = QPushButton()
+        self.pause_button = PushButton()
         self.pause_button.setIcon(QIcon(resource_path("pause.png")))
         self.pause_button.setFixedSize(20, 20)
         self.pause_button.setToolTip("Pause / Play")
 
-        self.copy_to_clipboard_button = QPushButton()
+        self.copy_to_clipboard_button = PushButton()
         self.copy_to_clipboard_button.setIcon(QIcon(resource_path("clipboard.svg")))
         self.copy_to_clipboard_button.setFixedSize(20, 20)
         self.copy_to_clipboard_button.setToolTip("Copy timestamped url to clipboard")
@@ -63,14 +63,14 @@ class VisualizerControls(QFrame):
         # info widget is a button when we only have one replay, and a combobox
         # otherwise to let the user choose which replay to see the info for
         if len(replays) == 1:
-            self.info_widget = QPushButton()
+            self.info_widget = PushButton()
             self.info_widget.setIcon(QIcon(resource_path("info.png")))
             self.info_widget.setFixedSize(20, 20)
             self.info_widget.setToolTip("Replay information")
             self.info_widget.clicked.connect(self.info_button_clicked)
         else:
-            self.info_widget = QComboBox()
-            self.info_widget.setInsertPolicy(QComboBox.NoInsert)
+            self.info_widget = ComboBox()
+            self.info_widget.setInsertPolicy(ComboBox.NoInsert)
             self.info_widget.addItem(QIcon(resource_path("info.png")), "")
             self.info_widget.setFixedSize(45, 20)
             self.info_widget.setToolTip("Replay information")
@@ -79,13 +79,13 @@ class VisualizerControls(QFrame):
                 self.info_widget.addItem(replay.username, replay)
 
 
-        self.settings_button = QPushButton()
+        self.settings_button = PushButton()
         self.settings_button.setIcon(QIcon(resource_path("settings_wheel.png")))
         self.settings_button.setFixedSize(20, 20)
         self.settings_button.setToolTip("Open settings")
         self.settings_button.clicked.connect(self.settings_button_clicked)
 
-        self.settings_popup = SettingsPopup(mods)
+        self.settings_popup = SettingsPopup(self, mods)
         self.settings_popup.raw_view_changed.connect(self.raw_view_changed)
         self.settings_popup.only_color_keydowns_changed.connect(self.only_color_keydowns_changed)
         self.settings_popup.hitobjects_changed.connect(self.hitobjects_changed)
@@ -93,12 +93,12 @@ class VisualizerControls(QFrame):
         self.settings_popup.num_frames_changed.connect(self.num_frames_changed)
         self.settings_popup.circle_size_mod_changed.connect(self.circle_size_mod_changed)
 
-        self.speed_up_button = QPushButton()
+        self.speed_up_button = PushButton()
         self.speed_up_button.setIcon(QIcon(resource_path("speed_up.png")))
         self.speed_up_button.setFixedSize(20, 20)
         self.speed_up_button.setToolTip("Increase speed")
 
-        self.speed_down_button = QPushButton()
+        self.speed_down_button = PushButton()
         self.speed_down_button.setIcon(QIcon(resource_path("speed_down.png")))
         self.speed_down_button.setFixedSize(20, 20)
         self.speed_down_button.setToolTip("Decrease speed")
@@ -160,8 +160,8 @@ class SettingsPopup(QFrame):
     num_frames_changed = pyqtSignal(int)
     circle_size_mod_changed = pyqtSignal(str)
 
-    def __init__(self, mods):
-        super().__init__()
+    def __init__(self, parent, mods):
+        super().__init__(parent)
         # we're technically a window, but we don't want to be shown as such to
         # the user, so hide our window features (like the top bar)
         self.setWindowFlags(Qt.Popup)
@@ -196,114 +196,3 @@ class SettingsPopup(QFrame):
         layout.addWidget(self.circle_size_mod_cmb)
         layout.addWidget(self.num_frames_slider)
         self.setLayout(layout)
-
-
-class CheckboxSetting(QFrame):
-    state_changed = pyqtSignal(bool)
-
-    def __init__(self, text, start_state):
-        super().__init__()
-
-        label = QLabel(text)
-        self.checkbox = QCheckBox()
-        self.checkbox.setChecked(start_state)
-        self.checkbox.stateChanged.connect(self._state_changed)
-
-        layout = QHBoxLayout()
-        layout.addWidget(label, 3)
-        layout.addWidget(self.checkbox, 1)
-        layout.setContentsMargins(0, 3, 0, 3)
-        self.setLayout(layout)
-
-    def checked(self):
-        return self.checkbox.isChecked()
-
-    def _state_changed(self, state):
-        # convert from qt's CheckState enum to a bool
-        self.state_changed.emit(state == Qt.CheckState.Checked) # pylint: disable=no-member
-
-
-class SliderSetting(QFrame):
-    value_changed = pyqtSignal(int)
-
-    def __init__(self, text, start_value, min_, max_):
-        super().__init__()
-
-        label = QLabel(text)
-        self.slider = JumpSlider(Qt.Horizontal)
-        self.slider.setValue(start_value)
-        self.slider.setRange(min_, max_)
-        self.slider.valueChanged.connect(self._value_changed)
-
-        self.spinbox = QSpinBox()
-        self.spinbox.setRange(min_, max_)
-        self.spinbox.setSingleStep(1)
-        self.spinbox.setValue(start_value)
-        self.spinbox.valueChanged.connect(self._value_changed)
-
-        layout = QHBoxLayout()
-        layout.addWidget(label, 1)
-        layout.addWidget(self.slider, 2)
-        layout.addWidget(self.spinbox, 1)
-        layout.setContentsMargins(0, 3, 0, 3)
-        self.setLayout(layout)
-
-    def _value_changed(self, new_value):
-        # keep slider and spinbox in sync
-        self.spinbox.setValue(new_value)
-        self.slider.setValue(new_value)
-        self.value_changed.emit(new_value)
-
-
-class ComboBoxSetting(QFrame):
-    value_changed = pyqtSignal(str)
-
-    def __init__(self, text, start_option, options):
-        super().__init__()
-
-        label = QLabel(text)
-        self.combobox = QComboBox(self)
-        self.combobox.setInsertPolicy(QComboBox.NoInsert)
-        self.combobox.setMaximumWidth(70)
-        for option in options:
-            self.combobox.addItem(option, option)
-
-        index = options.index(start_option)
-        self.combobox.setCurrentIndex(index)
-
-        self.combobox.currentIndexChanged.connect(self._value_changed)
-
-        layout = QHBoxLayout()
-        layout.addWidget(label, 1)
-        layout.addWidget(self.combobox, 3)
-        layout.setContentsMargins(0, 3, 0, 3)
-        self.setLayout(layout)
-
-    def _value_changed(self):
-        self.value_changed.emit(self.combobox.currentData())
-
-
-# A slider which moves directly to the clicked position when clicked
-# Implementation from https://stackoverflow.com/a/29639127/12164878
-class JumpSlider(QSlider):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.setCursor(QCursor(Qt.PointingHandCursor))
-
-    def mousePressEvent(self, event):
-        self.setValue(QStyle.sliderValueFromPosition(self.minimum(),
-            self.maximum(), event.x(), self.width()))
-        # our code relies on `sliderMoved` in order to only trigger on user
-        # input and not when we change the slider's value from the code (we
-        # update the slider's value every frame as we progress along the
-        # replay). Since the user *has* initiated this movement, emit
-        # `sliderMoved` to let our code know.
-        # TODO This should probably be done via a custom qsignal
-        # (userChangedValue) instead of re-purposing an existing one that wasn't
-        # meant for that purpose.
-        self.sliderMoved.emit(self.value())
-
-    def mouseMoveEvent(self, event):
-        self.setValue(QStyle.sliderValueFromPosition(self.minimum(),
-            self.maximum(), event.x(), self.width()))
-        self.sliderMoved.emit(self.value())

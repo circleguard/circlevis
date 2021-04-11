@@ -2,13 +2,15 @@ from functools import partial
 import math
 
 from PyQt5.QtWidgets import (QLabel, QVBoxLayout, QFrame, QAbstractItemView,
-    QTableWidget, QTableWidgetItem, QPushButton)
+    QTableWidget, QTableWidgetItem)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QFont, QCursor
 from circleguard import KeylessCircleguard, Snap, Hit, Mod
 from circleguard.utils import convert_statistic
 from slider.mod import circle_radius
 import numpy as np
+
+from circlevis.widgets import PushButton
 
 class ReplayInfo(QFrame):
     seek_to = pyqtSignal(int)
@@ -87,7 +89,7 @@ class ReplayInfo(QFrame):
         events_table = EventsTable(events)
         events_table.jump_button_clicked.connect(self.seek_to)
 
-        close_button = QPushButton("Close")
+        close_button = PushButton("Close")
         close_button.clicked.connect(self.close_button_clicked)
         close_button.setMaximumWidth(80)
         # don't let ourselves get a horizontal scrollbar on the table by being
@@ -168,7 +170,7 @@ class EventsTable(QTableWidget):
             # its contents margins. Otherwise the button is massive
             button_widget = QFrame()
 
-            jump_to_button = QPushButton("Jump")
+            jump_to_button = PushButton("Jump")
             jump_to_button.setMaximumWidth(60)
             layout = QVBoxLayout()
             layout.setAlignment(Qt.AlignCenter)

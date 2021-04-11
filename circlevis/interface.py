@@ -1,7 +1,8 @@
 from tempfile import TemporaryDirectory
 from threading import Thread
 
-from PyQt5.QtWidgets import QGridLayout, QWidget, QApplication, QSplitter, QFrame
+from PyQt5.QtWidgets import (QGridLayout, QWidget, QApplication, QSplitter,
+    QFrame)
 from PyQt5.QtCore import Qt
 from circleguard import Mod, KeylessCircleguard
 from slider import Library, Beatmap
