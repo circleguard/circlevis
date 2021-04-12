@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import numpy as np
 from PyQt5.QtGui import (QBrush, QPen, QColor, QPalette, QPainter, QPainterPath,
     QCursor)
-from PyQt5.QtWidgets import QFrame, QApplication
+from PyQt5.QtWidgets import QFrame
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPointF, QRectF, QRect
 from slider.beatmap import Circle, Slider, Spinner
 from slider.mod import circle_radius, od_to_ms
