@@ -53,6 +53,12 @@ class Interface(QWidget):
             # this logic is now duplicated here and in circlecore
             self.beatmap = self.library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
 
+        dt_enabled = any(Mod.DT in replay.mods for replay in replays)
+        ht_enabled = any(Mod.HT in replay.mods for replay in replays)
+        if dt_enabled:
+            start_speed = 1.5
+        if ht_enabled:
+            start_speed = 0.75
 
         self.renderer = Renderer(self.beatmap, replays, events, start_speed,
             paint_info, statistic_functions)
