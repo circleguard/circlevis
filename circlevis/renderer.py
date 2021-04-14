@@ -387,7 +387,47 @@ class Renderer(QFrame):
         PEN_WHITE.setWidth(1)
         self.painter.setPen(PEN_WHITE)
         self.painter.setOpacity(1)
-        self.painter.drawText(5, y, f"{round(self.clock.get_time())} ms")
+        ms = round(self.clock.get_time())
+        text = f"{ms}"
+        self.painter.drawText(5, y, text)
+        # we don't use a monospaced font, so our ms text may vary by as much as
+        # 10 pixels in width (possibly more, haven't checked rigorously). If
+        # we just drew our minute:seconds text directly after it, the position
+        # of that text would constantly flicker left and right, since the ms
+        # text (and thus its width) changes every single frame. To fix this,
+        # only increment widths in multiples of 10. (This will not fix the issue
+        # if the text width happens to hover exactly around a multiple of 10,
+        # but there's not much to be done in that case).
+        text_width = self.painter.boundingRect(5, y, 0, 0, 0, text).width()
+        if text_width < 50:
+            x = 50
+        elif text_width < 60:
+            x = 60
+        elif text_width < 70:
+            x = 70
+        elif text_width < 80:
+            x = 80
+        else:
+            # something crazy is going on, give up and just use text_width
+            x = text_width
+
+        # now some dirty code to deal with negattive times
+        minutes = int(ms / (1000 * 60))
+        seconds = ms // 1000
+        seconds_negative = seconds < 0
+        # pytohn modulo returns positive even when ``seconds_total`` is negative
+        seconds = seconds % 60
+        if seconds_negative:
+            # ``seconds`` can be 0 and 59 but not 60, so use 59 instead of 60
+            seconds = 59 - seconds
+        sign = ""
+        if minutes < 0 or seconds_negative:
+            sign = "-"
+            minutes = abs(minutes)
+            seconds = abs(seconds)
+
+        self.painter.drawText(5 + 4 + x, y,
+            f"ms ({sign}{minutes:01}:{seconds:02})")
 
         self.player_info_positions = {}
         if self.num_replays > 0:
