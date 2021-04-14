@@ -214,7 +214,7 @@ class Interface(QWidget):
         for replay in self.replays:
             ur = None
             edge_hits = None
-            if replay.map_info.available():
+            if cg.map_available(replay):
                 ur = cg.ur(replay)
                 edge_hits = cg.hits(replay, within=ReplayInfo.EDGE_HIT_THRESH)
 
