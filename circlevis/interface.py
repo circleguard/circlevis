@@ -84,8 +84,18 @@ class Interface(QWidget):
         self.controls.speed_down_button.clicked.connect(self.lower_speed)
         self.controls.copy_to_clipboard_button.clicked.connect(self.copy_to_clipboard)
         self.controls.time_slider.sliderMoved.connect(self.renderer.seek_to)
-        self.controls.time_slider.setRange(self.renderer.playback_start, self.renderer.playback_end)
-
+        # the renderer might have already loaded its playback_end by the time
+        # we get here, in which case take its value
+        if self.renderer.playback_end:
+            self.controls.time_slider.setRange(self.renderer.playback_start, self.renderer.playback_end)
+        # but if not, we need to wait until it tells us it's set its playback_end.
+        # set a dummy max val of 1000 until then
+        else:
+            self.controls.time_slider.setRange(self.renderer.playback_start, 1000)
+            self.renderer.playback_end_updated.connect(
+                lambda playback_end: self.controls.time_slider.setRange(
+                    self.renderer.playback_start, playback_end)
+            )
         self.controls.raw_view_changed.connect(self.renderer.raw_view_changed)
         self.controls.only_color_keydowns_changed.connect(self.renderer.only_color_keydowns_changed)
         self.controls.hitobjects_changed.connect(self.renderer.hitobjects_changed)
@@ -93,7 +103,6 @@ class Interface(QWidget):
         self.controls.num_frames_changed.connect(self.renderer.num_frames_changed)
         self.controls.circle_size_mod_changed.connect(self.renderer.circle_size_mod_changed)
         self.controls.show_info_for_replay.connect(self.show_info_panel)
-
 
         self.splitter = QSplitter()
         # splitter lays widgets horizontally by default, so combine renderer and

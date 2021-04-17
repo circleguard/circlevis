@@ -43,6 +43,7 @@ SLIDER_TICKRATE = 50
 class Renderer(QFrame):
     update_time_signal = pyqtSignal(int)
     pause_signal = pyqtSignal()
+    playback_end_updated = pyqtSignal(int)
 
     def __init__(self, beatmap, replays, events, start_speed, paint_info, \
         statistic_functions):
@@ -78,31 +79,11 @@ class Renderer(QFrame):
 
         self.use_hr = any(Mod.HR in replay.mods for replay in replays)
         self.use_ez = any(Mod.EZ in replay.mods for replay in replays)
-        if beatmap:
-            self.hit_objects = beatmap.hit_objects(hard_rock=self.use_hr, easy=self.use_ez)
-            self.playback_end = self.get_hit_endtime(self.hit_objects[-1])
-
-            ar = beatmap.ar(hard_rock=self.use_hr, easy=self.use_ez)
-            # https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate for formulas
-            if ar <= 5:
-                self.preempt = 1200 + 600 * (5 - ar) / 5
-                self.fade_in = 800 + 400 * (5 - ar) / 5
-            else:
-                self.preempt = 1200 - 750 * (ar - 5) / 5
-                self.fade_in = 800 - 500 * (ar - 5) / 5
-
-            self.hitwindow = od_to_ms(beatmap.od(hard_rock=self.use_hr, easy=self.use_ez)).hit_50
-
-            self.hitcircle_radius = circle_radius(beatmap.cs(hard_rock=self.use_hr, easy=self.use_ez))
-            # loading stuff
-            self.is_loading = True
-            # not fully accurate, but good enough
-            self.num_hitobjects = len(self.hit_objects)
-            self.num_sliders = self.num_hitobjects
+        if self.beatmap:
+            self.playback_end = None
             self.sliders_current = 0
-            self.thread = threading.Thread(target=self.process_sliders)
-            self.thread.start()
             self.has_beatmap = True
+            self.is_loading = True
         else:
             self.playback_end = 0
             self.is_loading = False
@@ -122,18 +103,10 @@ class Renderer(QFrame):
             self.players.append(
                 Player(replay=replay,
                        pen=QPen(QColor().fromHslF(i / self.num_replays, 0.75, 0.5)),))
-        self.playback_end = max(max(player.t) for player in self.players) if self.num_replays > 0 else self.playback_end
+
         self.playback_start = min(min(player.t) for player in self.players) if self.num_replays > 0 else 0
         # force 0 for replays with no negative frames
         self.playback_start = min(self.playback_start, 0)
-
-        # if our hitobjs are hard_rock versions, flip any player *without* hr
-        # so they match other hr players.
-        if self.use_hr:
-            for player in self.players:
-                if Mod.HardRock not in player.mods:
-                    for d in player.xy:
-                        d[1] = 384 - d[1]
 
         # clock stuff
         self.clock = Timer(start_speed, self.playback_start)
@@ -161,7 +134,63 @@ class Renderer(QFrame):
         self.num_frames_on_screen = 15
         self.only_color_keydowns = False
 
+        # all of these attributes will be set (if a beatmap is available)
+        # when we call `load_expensive_properties`. They are lazy looaded since
+        # they involve getting a beatmap's hitobjects, which is not a cheap
+        # operation. This way we can show a UI to the user ASAP and worry about
+        # loading stuff in a separate thread, once the UI has been shown.
+        self.num_sliders = None
+        self.preempt = None
+        self.fade_in = None
+        self.hit_objects = None
+        self.hitwindow = None
+        self.hitcircle_radius = None
+        self.num_hitobjects = None
+        self.num_sliders = None
+
+        self.thread = threading.Thread(target=self.load_expensive_properties)
+        self.thread.start()
+
         self.next_frame()
+
+    def load_expensive_properties(self):
+        if self.has_beatmap:
+            self.hit_objects = self.beatmap.hit_objects(hard_rock=self.use_hr, easy=self.use_ez)
+            self.playback_end = self.get_hit_endtime(self.hit_objects[-1])
+
+            ar = self.beatmap.ar(hard_rock=self.use_hr, easy=self.use_ez)
+            # https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate for formulas
+            if ar <= 5:
+                self.preempt = 1200 + 600 * (5 - ar) / 5
+                self.fade_in = 800 + 400 * (5 - ar) / 5
+            else:
+                self.preempt = 1200 - 750 * (ar - 5) / 5
+                self.fade_in = 800 - 500 * (ar - 5) / 5
+
+            self.hitwindow = od_to_ms(self.beatmap.od(hard_rock=self.use_hr, easy=self.use_ez)).hit_50
+
+            self.hitcircle_radius = circle_radius(self.beatmap.cs(hard_rock=self.use_hr, easy=self.use_ez))
+            # not fully accurate, but good enough
+            self.num_hitobjects = len(self.hit_objects)
+            self.num_sliders = self.num_hitobjects
+
+        self.playback_end = max(max(player.t) for player in self.players) if self.num_replays > 0 else self.playback_end
+        self.playback_end_updated.emit(self.playback_end)
+
+        # if our hitobjs are hard_rock versions, flip any player *without* hr
+        # so they match other hr players.
+        if self.use_hr:
+            for player in self.players:
+                if Mod.HardRock not in player.mods:
+                    for d in player.xy:
+                        d[1] = 384 - d[1]
+
+        # processing sliders depends on the hitobjs already being loaded, so
+        # only process them now. We could have called this immediately after
+        # loading the beatmap, but it's a blocking operation, so best to finish
+        # everything else first.
+        self.process_sliders()
+
 
     def resizeEvent(self, event):
         width = event.size().width() - GAMEPLAY_PADDING_WIDTH * 2
@@ -720,7 +749,13 @@ class Renderer(QFrame):
 
     def draw_loading_screen(self):
         self.painter.drawText(self.width() / 2 - 75, self.height() / 2 - 10, "Calculating Sliders, please wait...")
-        self.draw_progressbar(int((self.sliders_current / self.num_sliders) * 100))
+        # num_sliders may not be set yet, in which case we can't possibly have
+        # processed any sliders yet (since we haven't loaded the beatmap yet)
+        if self.num_sliders:
+            progress = self.sliders_current / self.num_sliders
+        else:
+            progress = 0
+        self.draw_progressbar(int(progress * 100))
 
     def process_sliders(self):
         for i, hitobj in enumerate(self.hit_objects):
