@@ -252,7 +252,7 @@ class Renderer(QFrame):
         self.update()
 
     def get_hitobjects(self):
-        # get current hitobjects
+        # get currently visible hitobjects
         current_time = self.clock.get_time()
         found_all = False
         # TODO optimize this by tracking our current hitobj index, this iterates
