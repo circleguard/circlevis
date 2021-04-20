@@ -96,8 +96,8 @@ class Renderer(QFrame):
             self.hitcircle_radius = circle_radius(beatmap.cs(hard_rock=self.use_hr, easy=self.use_ez))
             # loading stuff
             self.is_loading = True
-            # not fully accurate, but good enough
             self.num_hitobjects = len(self.hit_objects)
+            # not fully accurate, but good enough
             self.num_sliders = self.num_hitobjects
             self.sliders_current = 0
             self.thread = threading.Thread(target=self.process_sliders)
