@@ -197,7 +197,7 @@ class Renderer(QFrame):
         if self.num_replays == 1:
             r = replays[0]
             cg = KeylessCircleguard()
-            self.hits = cg.hits(r)
+            self.hits = cg.hits(r, beatmap=self.beatmap)
             # associate each hitobject with a hit (hit will be null if that
             # hitobj doesn't have a hit associated with it, should only happen
             # for missed hitobjs and spinners
