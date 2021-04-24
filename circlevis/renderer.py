@@ -9,8 +9,7 @@ from PyQt5.QtGui import (QBrush, QPen, QColor, QPalette, QPainter, QPainterPath,
 from PyQt5.QtWidgets import QFrame
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPointF, QRectF, QRect
 from slider.beatmap import Circle, Slider, Spinner
-from slider.mod import circle_radius, od_to_ms
-from circleguard import Mod, Key
+from circleguard import Mod, Key, hitradius, hitwindows
 
 from circlevis.clock import Timer
 from circlevis.player import Player
@@ -83,6 +82,8 @@ class Renderer(QFrame):
             self.playback_end = self.get_hit_endtime(self.hit_objects[-1])
 
             ar = beatmap.ar(hard_rock=self.use_hr, easy=self.use_ez)
+            od = beatmap.od(hard_rock=self.use_hr, easy=self.use_ez)
+            cs = beatmap.cs(hard_rock=self.use_hr, easy=self.use_ez)
             # https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate for formulas
             if ar <= 5:
                 self.preempt = 1200 + 600 * (5 - ar) / 5
@@ -91,9 +92,12 @@ class Renderer(QFrame):
                 self.preempt = 1200 - 750 * (ar - 5) / 5
                 self.fade_in = 800 - 500 * (ar - 5) / 5
 
-            self.hitwindow = od_to_ms(beatmap.od(hard_rock=self.use_hr, easy=self.use_ez)).hit_50
+            (hitwindow_50, hitwindow_100, hitwindow_300) = hitwindows(od)
+            self.hitwindow_50 = hitwindow_50
+            self.hitwindow_100 = hitwindow_100
+            self.hitwindow_300 = hitwindow_300
 
-            self.hitcircle_radius = circle_radius(beatmap.cs(hard_rock=self.use_hr, easy=self.use_ez))
+            self.hitcircle_radius = hitradius(cs)
             # loading stuff
             self.is_loading = True
             self.num_hitobjects = len(self.hit_objects)
@@ -266,7 +270,7 @@ class Renderer(QFrame):
             if isinstance(current_hitobj, Slider) or isinstance(current_hitobj, Spinner):
                 hit_end = self.get_hit_endtime(current_hitobj) + self.fade_in
             else:
-                hit_end = hit_t + self.hitwindow + self.fade_in
+                hit_end = hit_t + self.hitwindow_50 + self.fade_in
             if hit_t - self.preempt < current_time < hit_end:
                 self.hitobjs_to_draw.append(current_hitobj)
             elif hit_t > current_time:
@@ -590,7 +594,7 @@ class Renderer(QFrame):
             Hitobj hitobj: A Hitobject.
         """
         current_time = self.clock.get_time()
-        fade_out = max(0, ((current_time - self.get_hit_time(hitobj)) / self.hitwindow))
+        fade_out = max(0, ((current_time - self.get_hit_time(hitobj)) / self.hitwindow_50))
         opacity = min(1, ((current_time - (self.get_hit_time(hitobj) - self.preempt)) / self.fade_in))
         opacity = max(0, min(1, opacity-fade_out))
         p = hitobj.position
@@ -620,7 +624,7 @@ class Renderer(QFrame):
         if self.get_hit_endtime(hitobj) - current_time < 0:
             return
         radius = GAMEPLAY_HEIGHT / 2
-        fade_out = max(0, ((current_time - self.get_hit_endtime(hitobj)) / self.hitwindow))
+        fade_out = max(0, ((current_time - self.get_hit_endtime(hitobj)) / self.hitwindow_50))
         opacity = min(1, ((current_time - (self.get_hit_time(hitobj) - self.preempt)) / self.fade_in))
         opacity = max(0, min(1, opacity-fade_out))
         scale = min(1, (self.get_hit_endtime(hitobj) - current_time) / (self.get_hit_endtime(hitobj) - self.get_hit_time(hitobj)))
@@ -678,7 +682,7 @@ class Renderer(QFrame):
         """
 
         current_time = self.clock.get_time()
-        fade_out = max(0, ((current_time - self.get_hit_endtime(hitobj)) / self.hitwindow))
+        fade_out = max(0, ((current_time - self.get_hit_endtime(hitobj)) / self.hitwindow_50))
         opacity = min(1, ((current_time - (self.get_hit_time(hitobj) - self.preempt)) / self.fade_in))
         opacity = max(0, min(1, opacity-fade_out)) * 0.75
         p = hitobj.position
@@ -886,7 +890,7 @@ class Renderer(QFrame):
             return
         use_hr = new_value == "HR"
         use_ez = new_value == "EZ"
-        self.hitcircle_radius = circle_radius(self.beatmap.cs(hard_rock=use_hr, easy=use_ez))
+        self.hitcircle_radius = hitradius(self.beatmap.cs(hard_rock=use_hr, easy=use_ez))
         self.update()
 
 
