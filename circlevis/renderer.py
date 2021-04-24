@@ -307,11 +307,18 @@ class Renderer(QFrame):
             self.paint_cursor(player)
         # other info
         self.painter.setPen(_pen)
+        self.paint_border()
         if self.should_paint_info:
             self.paint_info()
         if self.paint_frametime:
             self.paint_frametime_graph()
         self.painter.end()
+
+    def paint_border(self):
+        PEN_WHITE.setWidth(self.scaled_number(1))
+        self.painter.setPen(PEN_WHITE)
+        self.painter.setOpacity(0.25)
+        self.painter.drawRect(QRectF(self.scaled_point(0, 0), self.scaled_point(GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT)))
 
     def paint_cursor(self, player):
         """
@@ -384,10 +391,6 @@ class Renderer(QFrame):
         # function
         y = 15
 
-        PEN_WHITE.setWidth(self.scaled_number(1))
-        self.painter.setPen(PEN_WHITE)
-        self.painter.setOpacity(0.25)
-        self.painter.drawRect(QRectF(self.scaled_point(0, 0), self.scaled_point(GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT)))
         PEN_WHITE.setWidth(1)
         self.painter.setPen(PEN_WHITE)
         self.painter.setOpacity(1)
