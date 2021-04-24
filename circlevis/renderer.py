@@ -4,12 +4,13 @@ from datetime import timedelta
 from dataclasses import dataclass
 
 import numpy as np
+from scipy import interpolate
 from PyQt5.QtGui import (QBrush, QPen, QColor, QPalette, QPainter, QPainterPath,
     QCursor)
 from PyQt5.QtWidgets import QFrame
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPointF, QRectF, QRect
 from slider.beatmap import Circle, Slider, Spinner
-from circleguard import Mod, Key, hitradius, hitwindows
+from circleguard import Mod, Key, hitradius, hitwindows, JudgmentType, KeylessCircleguard
 
 from circlevis.clock import Timer
 from circlevis.player import Player
@@ -26,6 +27,17 @@ PEN_GREY_INACTIVE = QPen(QColor(133, 125, 125))
 PEN_HIGHLIGHT = QPen(QColor(230, 212, 92))
 PEN_BLANK = QPen(QColor(0, 0, 0, 0))
 
+# for hit error bar markers and regions
+
+PEN_BLUE = QPen(QColor(93, 183, 223))
+PEN_GREEN = QPen(QColor(127, 221, 71))
+PEN_YELLOW = QPen(QColor(211, 175, 90))
+
+BRUSH_BLUE = QBrush(QColor(93, 183, 223))
+BRUSH_GREEN = QBrush(QColor(127, 221, 71))
+BRUSH_YELLOW = QBrush(QColor(211, 175, 90))
+
+
 BRUSH_WHITE = QBrush(QColor(200, 200, 200))
 BRUSH_GRAY = QBrush(QColor(100, 100, 100))
 BRUSH_DARKGRAY = QBrush(QColor(10, 10, 10))
@@ -35,6 +47,15 @@ GAMEPLAY_PADDING_WIDTH = 64 + 60
 GAMEPLAY_PADDING_HEIGHT = 48 + 20
 GAMEPLAY_WIDTH = 512
 GAMEPLAY_HEIGHT = 384
+
+# how high in pixels one half of the error bar should be (so the total height
+# is twice this).
+ERROR_BAR_HEIGHT = 4
+# hitobjs which were hit less than this threshold in ms will have an error bar
+# marker shown to indicate the hit
+ERROR_BAR_HIT_THRESHOLD = 4000
+# width of each hit marker in pixels
+ERROR_BAR_HIT_WIDTH = 2
 
 SLIDER_TICKRATE = 50
 
@@ -72,8 +93,12 @@ class Renderer(QFrame):
 
         self.setMouseTracking(True)
 
-        # beatmap init stuff
+        # hitobjs currently on screen
         self.hitobjs_to_draw = []
+        # we actually care about more than just the hitobjs on screen when
+        # drawing error bar markers, so keep track of those hitobjs here.
+        # this will (should) be a superset of ``hitobjs_to_draw``
+        self.hitobjs_to_draw_hits_for = []
 
         self.use_hr = any(Mod.HR in replay.mods for replay in replays)
         self.use_ez = any(Mod.EZ in replay.mods for replay in replays)
@@ -164,8 +189,26 @@ class Renderer(QFrame):
         # how many frames for each replay to draw on screen at a time
         self.num_frames_on_screen = 15
         self.only_color_keydowns = False
+        self.should_draw_hit_error_bar = True
 
         self.next_frame()
+
+        self.hitobj_to_hits = {}
+        if self.num_replays == 1:
+            r = replays[0]
+            cg = KeylessCircleguard()
+            self.hits = cg.hits(r)
+            # associate each hitobject with a hit (hit will be null if that
+            # hitobj doesn't have a hit associated with it, should only happen
+            # for missed hitobjs and spinners
+            for hit in self.hits:
+                hit_hitobj = hit.hitobject
+                hit_hitobj_t = timedelta(milliseconds=hit_hitobj.t)
+                bm_hitobj = self.beatmap.closest_hitobject(hit_hitobj_t)
+                assert hit_hitobj.t == self.get_hit_time(bm_hitobj)
+                bm_hitobj = HitObjWrapper(bm_hitobj)
+                self.hitobj_to_hits[bm_hitobj] = hit
+
 
     def resizeEvent(self, event):
         width = event.size().width() - GAMEPLAY_PADDING_WIDTH * 2
@@ -264,6 +307,7 @@ class Renderer(QFrame):
         # O(n) worst case) which can't be good for performance
         index = 0
         self.hitobjs_to_draw = []
+        self.hitobjs_to_draw_hits_for = []
         while not found_all:
             current_hitobj = self.hit_objects[index]
             hit_t = current_hitobj.time.total_seconds() * 1000
@@ -271,8 +315,11 @@ class Renderer(QFrame):
                 hit_end = self.get_hit_endtime(current_hitobj) + self.fade_in
             else:
                 hit_end = hit_t + self.hitwindow_50 + self.fade_in
+            if hit_t > current_time - ERROR_BAR_HIT_THRESHOLD:
+                self.hitobjs_to_draw_hits_for.append(current_hitobj)
             if hit_t - self.preempt < current_time < hit_end:
                 self.hitobjs_to_draw.append(current_hitobj)
+
             elif hit_t > current_time:
                 found_all = True
             if index == self.num_hitobjects - 1:
@@ -318,7 +365,8 @@ class Renderer(QFrame):
         PEN_WHITE.setWidth(self.scaled_number(1))
         self.painter.setPen(PEN_WHITE)
         self.painter.setOpacity(0.25)
-        self.painter.drawRect(QRectF(self.scaled_point(0, 0), self.scaled_point(GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT)))
+        self.painter.drawRect(QRectF(self.scaled_point(0, 0),
+            self.scaled_point(GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT)))
 
     def paint_cursor(self, player):
         """
@@ -379,6 +427,21 @@ class Renderer(QFrame):
     def paint_beatmap(self):
         for hitobj in self.hitobjs_to_draw[::-1]:
             self.draw_hitobject(hitobj)
+
+        # only draw hit error bars if there's only one replay
+        if self.should_draw_hit_error_bar and self.num_replays == 1:
+            self.draw_hit_error_bar()
+
+            for hitobj in self.hitobjs_to_draw_hits_for:
+                # this hitobj won't be in our dict if it was never hit (either
+                # is a spinner or was missed)
+                if HitObjWrapper(hitobj) not in self.hitobj_to_hits:
+                    continue
+
+                hit = self.hitobj_to_hits[HitObjWrapper(hitobj)]
+                # don't draw hits that haven't happened yet
+                if hit.t <= self.clock.get_time():
+                    self.draw_hit(hitobj, hit)
 
     def paint_info(self):
         """
@@ -612,6 +675,16 @@ class Renderer(QFrame):
         self.painter.setOpacity(opacity)
         self.painter.setPen(PEN_WHITE)
         self.painter.setBrush(BRUSH_GRAY)
+
+        # from circleguard import JudgmentType
+        # hit50s = [j for j in self.judgments if j.type is JudgmentType.Hit50]
+        # hit100s = [j for j in self.judgments if j.type is JudgmentType.Hit100]
+        # hit300s = [j for j in self.judgments if j.type is JudgmentType.Hit300]
+        # # print(hit100s)
+        # if self.get_hit_time(hitobj) in [j.hitobject.t for j in hit100s]:
+        #     BRUSH_RANDOM = QBrush(QColor(120, 60, 200))
+        #     self.painter.setBrush(BRUSH_RANDOM)
+
         self.painter.drawEllipse(self.scaled_point(p.x, p.y), r, r)
         self.painter.setBrush(BRUSH_BLANK)
 
@@ -701,6 +774,82 @@ class Renderer(QFrame):
         for i in hitobj.slider_body:
             sliderbody.lineTo(self.scaled_point(i.x, i.y))
         self.painter.drawPath(sliderbody)
+
+    def draw_hit_error_bar(self):
+        mid_x = GAMEPLAY_WIDTH / 2
+        y = GAMEPLAY_HEIGHT - 10
+
+        # draw the center white bar
+        self.painter.setPen(PEN_WHITE)
+        pen = self.painter.pen()
+        pen.setWidth(ERROR_BAR_HIT_WIDTH)
+        self.painter.setPen(pen)
+        self.draw_line(1, [mid_x, y - 10], [mid_x, y + 10])
+
+        # draw the three error zones as slightly transparent
+        self.painter.setOpacity(0.65)
+        self.painter.setPen(PEN_BLANK)
+
+        self.painter.setBrush(BRUSH_BLUE)
+        p1 = self.scaled_point(mid_x - self.hitwindow_300, y - ERROR_BAR_HEIGHT)
+        p2 = self.scaled_point(mid_x + self.hitwindow_300, y + ERROR_BAR_HEIGHT)
+        self.painter.drawRect(QRectF(p1, p2))
+
+        # draw two rects to avoid overlapping with hitwindow_300 in the center
+        self.painter.setBrush(BRUSH_GREEN)
+        p1 = self.scaled_point(mid_x - self.hitwindow_100, y - ERROR_BAR_HEIGHT)
+        p2 = self.scaled_point(mid_x - self.hitwindow_300, y + ERROR_BAR_HEIGHT)
+        self.painter.drawRect(QRectF(p1, p2))
+        p1 = self.scaled_point(mid_x + self.hitwindow_300, y - ERROR_BAR_HEIGHT)
+        p2 = self.scaled_point(mid_x + self.hitwindow_100, y + ERROR_BAR_HEIGHT)
+        self.painter.drawRect(QRectF(p1, p2))
+
+        self.painter.setBrush(BRUSH_YELLOW)
+        p1 = self.scaled_point(mid_x - self.hitwindow_50, y - ERROR_BAR_HEIGHT)
+        p2 = self.scaled_point(mid_x - self.hitwindow_100, y + ERROR_BAR_HEIGHT)
+        self.painter.drawRect(QRectF(p1, p2))
+        p1 = self.scaled_point(mid_x + self.hitwindow_100, y - ERROR_BAR_HEIGHT)
+        p2 = self.scaled_point(mid_x + self.hitwindow_50, y + ERROR_BAR_HEIGHT)
+        self.painter.drawRect(QRectF(p1, p2))
+
+        self.painter.setBrush(BRUSH_BLANK)
+        self.painter.setOpacity(1)
+
+    def draw_hit(self, hitobj, hit):
+        # TODO: avoid duplication in these constants between this and
+        # `draw_hit_error_bar` - maybe just extract to globals?
+        mid_x = GAMEPLAY_WIDTH / 2
+        y = GAMEPLAY_HEIGHT - 10
+
+        if hit.type is JudgmentType.Hit300:
+            pen = PEN_BLUE
+        elif hit.type is JudgmentType.Hit100:
+            pen = PEN_GREEN
+        elif hit.type is JudgmentType.Hit50:
+            pen = PEN_YELLOW
+
+        self.painter.setPen(pen)
+        pen = self.painter.pen()
+        pen.setWidth(ERROR_BAR_HIT_WIDTH)
+        self.painter.setPen(pen)
+
+        current_time = self.clock.get_time()
+
+        # positive is a late hit, negative is an early hit
+        error = hit.t - self.get_hit_time(hitobj)
+        start = [mid_x + error, y - 10]
+        end = [start[0], y + 10]
+
+        time_passed = current_time - hit.t
+        # how long in ms to display hits for before they disappear
+        time_passed = min(time_passed, ERROR_BAR_HIT_THRESHOLD)
+        # draw most recent hits as more visible (higher alpha) and old hits
+        # as less visible (lower alpha)
+        x_interp = [0, ERROR_BAR_HIT_THRESHOLD]
+        y_interp = [1, 0]
+        f = interpolate.interp1d(x_interp, y_interp)
+        alpha = f(time_passed)
+        self.draw_line(alpha, start, end)
 
     def draw_progressbar(self, percentage):
         loading_bg = QPainterPath()
@@ -886,6 +1035,10 @@ class Renderer(QFrame):
         self.num_frames_on_screen = new_value
         self.update()
 
+    def draw_hit_error_bar_changed(self, new_value):
+        self.should_draw_hit_error_bar = new_value
+        self.update()
+
     def circle_size_mod_changed(self, new_value):
         if not self.has_beatmap:
             # cs doesn't matter to us if we don't have a beatmap (and we don't
@@ -912,3 +1065,22 @@ class Rect:
 
     def toQRect(self):
         return QRect(self.x, self.y, self.width, self.height)
+
+## slider's hitobj's hash depends on the position (as well as time, and other
+## attribuutes) of the hitobj, which means that a hitobj is not equal to its
+## hard_rock version. This is a problem for us
+
+# TODO: why can't I just implement a __hash__ in slider? depending on position
+# should be fine since we only use the hr version in our code.
+
+class HitObjWrapper:
+    def __init__(self, slider_hitobj):
+        self.slider_hitobj = slider_hitobj
+
+    def __eq__(self, other):
+        if not isinstance(other, HitObjWrapper):
+            return False
+        return self.slider_hitobj.time == other.slider_hitobj.time
+
+    def __hash__(self):
+        return hash((self.slider_hitobj.time))

@@ -91,6 +91,7 @@ class Interface(QWidget):
         self.controls.hitobjects_changed.connect(self.renderer.hitobjects_changed)
         self.controls.approach_circles_changed.connect(self.renderer.approach_circles_changed)
         self.controls.num_frames_changed.connect(self.renderer.num_frames_changed)
+        self.controls.draw_hit_error_bar_changed.connect(self.renderer.draw_hit_error_bar_changed)
         self.controls.circle_size_mod_changed.connect(self.renderer.circle_size_mod_changed)
         self.controls.show_info_for_replay.connect(self.show_info_panel)
 

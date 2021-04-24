@@ -13,6 +13,7 @@ class VisualizerControls(QFrame):
     hitobjects_changed = pyqtSignal(bool)
     approach_circles_changed = pyqtSignal(bool)
     num_frames_changed = pyqtSignal(int)
+    draw_hit_error_bar_changed = pyqtSignal(bool)
     circle_size_mod_changed = pyqtSignal(str)
 
     show_info_for_replay = pyqtSignal(Replay)
@@ -91,6 +92,7 @@ class VisualizerControls(QFrame):
         self.settings_popup.hitobjects_changed.connect(self.hitobjects_changed)
         self.settings_popup.approach_circles_changed.connect(self.approach_circles_changed)
         self.settings_popup.num_frames_changed.connect(self.num_frames_changed)
+        self.settings_popup.draw_hit_error_bar_changed.connect(self.draw_hit_error_bar_changed)
         self.settings_popup.circle_size_mod_changed.connect(self.circle_size_mod_changed)
 
         self.speed_up_button = PushButton()
@@ -158,6 +160,7 @@ class SettingsPopup(QFrame):
     hitobjects_changed = pyqtSignal(bool)
     approach_circles_changed = pyqtSignal(bool)
     num_frames_changed = pyqtSignal(int)
+    draw_hit_error_bar_changed = pyqtSignal(bool)
     circle_size_mod_changed = pyqtSignal(str)
 
     def __init__(self, parent, mods):
@@ -188,11 +191,15 @@ class SettingsPopup(QFrame):
         self.num_frames_slider = SliderSetting("Num. frames:", 15, 1, 30)
         self.num_frames_slider.value_changed.connect(self.num_frames_changed)
 
+        self.hit_error_bar_cb = CheckboxSetting("Draw hit error bar:", True)
+        self.hit_error_bar_cb.state_changed.connect(self.draw_hit_error_bar_changed)
+
         layout = QVBoxLayout()
         layout.addWidget(self.raw_view_cb)
         layout.addWidget(self.only_color_keydowns)
         layout.addWidget(self.hitobjects_cb)
         layout.addWidget(self.approach_circles_cb)
+        layout.addWidget(self.hit_error_bar_cb)
         layout.addWidget(self.circle_size_mod_cmb)
         layout.addWidget(self.num_frames_slider)
         self.setLayout(layout)
