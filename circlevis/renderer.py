@@ -208,7 +208,7 @@ class Renderer(QFrame):
             self.hits = cg.hits(r, beatmap=self.beatmap)
             # associate each hitobject with a hit. Only hitobjs which were
             # missed or are spinners won't be associated in this mapping (since
-            # we have no hit fo them)
+            # we have no hit for them)
             for hit in self.hits:
                 # use the hitobj time as our key. This will work fine for ranked
                 # maps (no two hitobjs can be placed at the same time) but may
