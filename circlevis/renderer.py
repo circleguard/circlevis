@@ -685,15 +685,6 @@ class Renderer(QFrame):
         self.painter.setPen(PEN_WHITE)
         self.painter.setBrush(BRUSH_GRAY)
 
-        # from circleguard import JudgmentType
-        # hit50s = [j for j in self.judgments if j.type is JudgmentType.Hit50]
-        # hit100s = [j for j in self.judgments if j.type is JudgmentType.Hit100]
-        # hit300s = [j for j in self.judgments if j.type is JudgmentType.Hit300]
-        # # print(hit100s)
-        # if self.get_hit_time(hitobj) in [j.hitobject.t for j in hit100s]:
-        #     BRUSH_RANDOM = QBrush(QColor(120, 60, 200))
-        #     self.painter.setBrush(BRUSH_RANDOM)
-
         self.painter.drawEllipse(self.scaled_point(p.x, p.y), r, r)
         self.painter.setBrush(BRUSH_BLANK)
 
