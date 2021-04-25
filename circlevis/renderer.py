@@ -50,12 +50,13 @@ GAMEPLAY_HEIGHT = 384
 
 # how high in pixels one half of the error bar should be (so the total height
 # is twice this).
-ERROR_BAR_HEIGHT = 4
+ERROR_BAR_HEIGHT = 3
 # hitobjs which were hit less than this threshold in ms will have an error bar
 # marker shown to indicate the hit
 ERROR_BAR_HIT_THRESHOLD = 4000
 # width of each hit marker in pixels
 ERROR_BAR_HIT_WIDTH = 2
+ERROR_BAR_HIT_HEIGHT = 8
 
 SLIDER_TICKRATE = 50
 
@@ -779,14 +780,15 @@ class Renderer(QFrame):
 
     def draw_hit_error_bar(self):
         mid_x = GAMEPLAY_WIDTH / 2
-        y = GAMEPLAY_HEIGHT - 10
+        y = GAMEPLAY_HEIGHT - ERROR_BAR_HIT_HEIGHT
 
         # draw the center white bar
         self.painter.setPen(PEN_WHITE)
         pen = self.painter.pen()
         pen.setWidth(ERROR_BAR_HIT_WIDTH)
         self.painter.setPen(pen)
-        self.draw_line(1, [mid_x, y - 10], [mid_x, y + 10])
+        self.draw_line(1, [mid_x, y - ERROR_BAR_HIT_HEIGHT],
+            [mid_x, y + ERROR_BAR_HIT_HEIGHT])
 
         # draw the three error zones as slightly transparent
         self.painter.setOpacity(0.65)
@@ -821,7 +823,7 @@ class Renderer(QFrame):
         # TODO: avoid duplication in these constants between this and
         # `draw_hit_error_bar` - maybe just extract to globals?
         mid_x = GAMEPLAY_WIDTH / 2
-        y = GAMEPLAY_HEIGHT - 10
+        y = GAMEPLAY_HEIGHT - ERROR_BAR_HIT_HEIGHT
 
         if hit.type is JudgmentType.Hit300:
             pen = PEN_BLUE
@@ -839,8 +841,8 @@ class Renderer(QFrame):
 
         # positive is a late hit, negative is an early hit
         error = hit.t - self.get_hit_time(hitobj)
-        start = [mid_x + error, y - 10]
-        end = [start[0], y + 10]
+        start = [(mid_x + error), y - ERROR_BAR_HIT_HEIGHT]
+        end = [(mid_x + error), y + ERROR_BAR_HIT_HEIGHT]
 
         time_passed = current_time - hit.t
         # how long in ms to display hits for before they disappear
