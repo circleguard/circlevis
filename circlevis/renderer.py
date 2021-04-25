@@ -198,16 +198,18 @@ class Renderer(QFrame):
             r = replays[0]
             cg = KeylessCircleguard()
             self.hits = cg.hits(r, beatmap=self.beatmap)
-            # associate each hitobject with a hit (hit will be null if that
-            # hitobj doesn't have a hit associated with it, should only happen
-            # for missed hitobjs and spinners
+            # associate each hitobject with a hit. Only hitobjs which were
+            # missed or are spinners won't be associated in this mapping (since
+            # we have no hit fo them)
             for hit in self.hits:
-                hit_hitobj = hit.hitobject
-                hit_hitobj_t = timedelta(milliseconds=hit_hitobj.t)
-                bm_hitobj = self.beatmap.closest_hitobject(hit_hitobj_t)
-                assert hit_hitobj.t == self.get_hit_time(bm_hitobj)
-                bm_hitobj = HitObjWrapper(bm_hitobj)
-                self.hitobj_to_hits[bm_hitobj] = hit
+                # use the hitobj time as our key. This will work fine for ranked
+                # maps (no two hitobjs can be placed at the same time) but may
+                # break for aspire, loved, or crazy graveyarded maps. Needs
+                # testing.
+                # A way around this is to simply store the slider hitobj in
+                # circlecore's hitobjs, or convert core to using slider's
+                # hitobjs again (or make them subclasses, or some such)
+                self.hitobj_to_hits[hit.hitobject.t] = hit
 
 
     def resizeEvent(self, event):
@@ -435,10 +437,10 @@ class Renderer(QFrame):
             for hitobj in self.hitobjs_to_draw_hits_for:
                 # this hitobj won't be in our dict if it was never hit (either
                 # is a spinner or was missed)
-                if HitObjWrapper(hitobj) not in self.hitobj_to_hits:
+                if self.get_hit_time(hitobj) not in self.hitobj_to_hits:
                     continue
 
-                hit = self.hitobj_to_hits[HitObjWrapper(hitobj)]
+                hit = self.hitobj_to_hits[self.get_hit_time(hitobj)]
                 # don't draw hits that haven't happened yet
                 if hit.t <= self.clock.get_time():
                     self.draw_hit(hitobj, hit)
@@ -1065,22 +1067,3 @@ class Rect:
 
     def toQRect(self):
         return QRect(self.x, self.y, self.width, self.height)
-
-## slider's hitobj's hash depends on the position (as well as time, and other
-## attribuutes) of the hitobj, which means that a hitobj is not equal to its
-## hard_rock version. This is a problem for us
-
-# TODO: why can't I just implement a __hash__ in slider? depending on position
-# should be fine since we only use the hr version in our code.
-
-class HitObjWrapper:
-    def __init__(self, slider_hitobj):
-        self.slider_hitobj = slider_hitobj
-
-    def __eq__(self, other):
-        if not isinstance(other, HitObjWrapper):
-            return False
-        return self.slider_hitobj.time == other.slider_hitobj.time
-
-    def __hash__(self):
-        return hash((self.slider_hitobj.time))
