@@ -49,11 +49,14 @@ class ReplayInfo(QFrame):
             ur = ur or circleguard.ur(replay)
             ucv_ur = round(convert_statistic(ur, replay.mods, to="ucv"), 2)
             ur = round(ur, 2)
-            ur = self.maybe_highlight(ur, self.UR_YELLOW_THRESH, self.UR_RED_THRESH)
-            # highlight ucvUR in the same way as ur or the user will get confused
-            # (ie these should always be the same color)
-            yellow_thresh = convert_statistic(self.UR_YELLOW_THRESH, replay.mods, to="ucv")
-            red_thresh = convert_statistic(self.UR_RED_THRESH, replay.mods, to="ucv")
+            ur = self.maybe_highlight(ur, self.UR_YELLOW_THRESH,
+                self.UR_RED_THRESH)
+            # highlight ucvUR in the same way as ur or the user will get
+            # confused (ie these should always be the same color)
+            yellow_thresh = convert_statistic(self.UR_YELLOW_THRESH,
+                replay.mods, to="ucv")
+            red_thresh = convert_statistic(self.UR_RED_THRESH, replay.mods,
+                to="ucv")
             ucv_ur = self.maybe_highlight(ucv_ur, yellow_thresh, red_thresh)
         else:
             ur = "Unknown"
@@ -65,7 +68,8 @@ class ReplayInfo(QFrame):
 
         frametime = frametime or circleguard.frametime(replay)
         frametime = round(frametime, 2)
-        frametime = self.maybe_highlight(frametime, self.FRAMETIME_YELLOW_THRESH, self.FRAMETIME_RED_THRESH)
+        frametime = self.maybe_highlight(frametime,
+            self.FRAMETIME_YELLOW_THRESH, self.FRAMETIME_RED_THRESH)
         frametime_label = QLabel(f"<b>cv frametime:</b> {frametime}")
         frametime_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
         frametime_label.setCursor(QCursor(Qt.IBeamCursor))
@@ -76,7 +80,8 @@ class ReplayInfo(QFrame):
         snaps = snaps or circleguard.snaps(replay, **snaps_args)
 
         if replay.map_info.available():
-            edge_hits = edge_hits or circleguard.hits(replay, within=self.EDGE_HIT_THRESH)
+            edge_hits = edge_hits or circleguard.hits(replay,
+                within=self.EDGE_HIT_THRESH)
         else:
             edge_hits = []
 
@@ -91,7 +96,8 @@ class ReplayInfo(QFrame):
         close_button.setMaximumWidth(80)
         # don't let ourselves get a horizontal scrollbar on the table by being
         # too small, + 60 to account for the vertical scrollbar I think?
-        self.setMinimumWidth(events_table.horizontalHeader().length() + events_table.verticalHeader().width() + 60)
+        self.setMinimumWidth(events_table.horizontalHeader().length() +
+            events_table.verticalHeader().width() + 60)
 
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignTop)
@@ -175,7 +181,8 @@ class EventsTable(QTableWidget):
             layout.addWidget(jump_to_button)
             button_widget.setLayout(layout)
 
-            jump_to_button.clicked.connect(partial(self.jump_button_clicked.emit, time))
+            jump_to_button.clicked.connect(
+                partial(self.jump_button_clicked.emit, time))
             self.setCellWidget(i, 2, button_widget)
 
         self.setColumnWidth(0, 80)
