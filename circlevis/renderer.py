@@ -10,7 +10,8 @@ from PyQt5.QtGui import (QBrush, QPen, QColor, QPalette, QPainter, QPainterPath,
 from PyQt5.QtWidgets import QFrame
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPointF, QRectF, QRect
 from slider.beatmap import Circle, Slider, Spinner
-from circleguard import Mod, Key, hitradius, hitwindows, JudgmentType, KeylessCircleguard
+from circleguard import (Mod, Key, hitradius, hitwindows, HitType,
+    KeylessCircleguard)
 
 from circlevis.clock import Timer
 from circlevis.player import Player
@@ -826,11 +827,11 @@ class Renderer(QFrame):
         mid_x = GAMEPLAY_WIDTH / 2
         y = GAMEPLAY_HEIGHT - ERROR_BAR_HIT_HEIGHT
 
-        if hit.type is JudgmentType.Hit300:
+        if hit.type is HitType.Hit300:
             pen = PEN_BLUE
-        elif hit.type is JudgmentType.Hit100:
+        elif hit.type is HitType.Hit100:
             pen = PEN_GREEN
-        elif hit.type is JudgmentType.Hit50:
+        elif hit.type is HitType.Hit50:
             pen = PEN_YELLOW
 
         self.painter.setPen(pen)
