@@ -4,8 +4,7 @@ from PyQt5.QtWidgets import (QLabel, QVBoxLayout, QFrame, QAbstractItemView,
     QTableWidget, QTableWidgetItem)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QCursor
-from circleguard import KeylessCircleguard, Snap, Hit
-from circleguard.utils import convert_statistic
+from circleguard import KeylessCircleguard, HitType, Miss, convert_statistic
 
 from circlevis.widgets import PushButton
 
@@ -22,7 +21,7 @@ class ReplayInfo(QFrame):
     EDGE_HIT_THRESH = 3
 
     def __init__(self, replay, slider_dir, ur=None, frametime=None, \
-        snaps=None,edge_hits=None, snaps_args={}):
+        snaps=None, judgments=None, snaps_args={}):
         """
         If passed, the `ur`, `frametime`, `snaps`, and
         `hits` parameters will be used instead of recalculating them from
@@ -78,14 +77,29 @@ class ReplayInfo(QFrame):
 
         events = []
         snaps = snaps or circleguard.snaps(replay, **snaps_args)
+        snap_events = [SnapEvent(snap) for snap in snaps]
 
+        edge_hits = []
+        misses = []
+        hit100s = []
+        hit50s = []
         if replay.map_info.available():
-            edge_hits = edge_hits or circleguard.hits(replay,
-                within=self.EDGE_HIT_THRESH)
-        else:
-            edge_hits = []
+            judgments = judgments or circleguard.judgments(replay)
+            for judgment in judgments:
+                if isinstance(judgment, Miss):
+                    misses.append(MissEvent(judgment))
+                else:
+                    if judgment.type is HitType.Hit100:
+                        hit100s.append(Hit100Event(judgment))
+                    if judgment.type is HitType.Hit50:
+                        hit50s.append(Hit50Event(judgment))
+                    if judgment.within(self.EDGE_HIT_THRESH):
+                        edge_hits.append(EdgeHitEvent(judgment))
 
-        events.extend(snaps)
+        events.extend(snap_events)
+        events.extend(misses)
+        events.extend(hit100s)
+        events.extend(hit50s)
         events.extend(edge_hits)
 
         events_table = EventsTable(events)
@@ -130,6 +144,33 @@ class ReplayInfo(QFrame):
             return False
         return self.replay == other.replay
 
+
+class Event:
+    def __init__(self, label, time):
+        self.label = label
+        self.time = time
+
+class SnapEvent(Event):
+    def __init__(self, snap):
+        super().__init__("snap", snap.time)
+
+class EdgeHitEvent(Event):
+    def __init__(self, judgment):
+        super().__init__("edge hit", judgment.time)
+
+class MissEvent(Event):
+    def __init__(self, judgment):
+        super().__init__("miss", judgment.hitobject.time)
+
+class Hit100Event(Event):
+    def __init__(self, judgment):
+        super().__init__("100", judgment.time)
+
+class Hit50Event(Event):
+    def __init__(self, judgment):
+        super().__init__("50", judgment.time)
+
+
 class EventsTable(QTableWidget):
     jump_button_clicked = pyqtSignal(int) # time (ms)
 
@@ -156,17 +197,10 @@ class EventsTable(QTableWidget):
         self.setRowCount(len(events))
 
         for i, event in enumerate(events):
-            if isinstance(event, Snap):
-                type_string = "snap"
-                time = event.time
-            if isinstance(event, Hit):
-                type_string = "edge hit"
-                time = event.t
-
-            item = QTableWidgetItem(type_string)
+            item = QTableWidgetItem(event.label)
             self.setItem(i, 0, item)
 
-            item = QTableWidgetItem(str(time))
+            item = QTableWidgetItem(str(event.time))
             self.setItem(i, 1, item)
 
             # we need to embed the button in a widget (or frame) so we can set
@@ -182,7 +216,7 @@ class EventsTable(QTableWidget):
             button_widget.setLayout(layout)
 
             jump_to_button.clicked.connect(
-                partial(self.jump_button_clicked.emit, time))
+                partial(self.jump_button_clicked.emit, event.time))
             self.setCellWidget(i, 2, button_widget)
 
         self.setColumnWidth(0, 80)

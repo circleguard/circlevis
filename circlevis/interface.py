@@ -187,9 +187,9 @@ class Interface(QWidget):
             replay_info = self.replay_info_cache[replay]
             replay_info.show()
         else:
-            ur, frametime, snaps, edge_hits = self.replay_statistics_precalculated[replay]
+            ur, frametime, snaps, judgments = self.replay_statistics_precalculated[replay]
             replay_info = ReplayInfo(replay, self.library.path, ur, frametime,
-                snaps, edge_hits, self.snaps_args)
+                snaps, judgments, self.snaps_args)
             replay_info.seek_to.connect(self.renderer.seek_to)
 
         # don't show two of the same info panels at once
@@ -214,14 +214,15 @@ class Interface(QWidget):
         cg = KeylessCircleguard()
         for replay in self.replays:
             ur = None
-            edge_hits = None
+            judgments = None
             if replay.map_info.available():
                 ur = cg.ur(replay)
-                edge_hits = cg.hits(replay, within=ReplayInfo.EDGE_HIT_THRESH)
+                judgments = cg.judgments(replay)
 
             frametime = cg.frametime(replay)
             snaps = cg.snaps(replay, **self.snaps_args)
-            self.replay_statistics_precalculated[replay] = (ur, frametime, snaps, edge_hits)
+            self.replay_statistics_precalculated[replay] = (ur, frametime,
+                snaps, judgments)
 
 
 class Combined(QFrame):
