@@ -107,13 +107,14 @@ class Renderer(QFrame):
         self.use_hr = any(Mod.HR in replay.mods for replay in replays)
         self.use_ez = any(Mod.EZ in replay.mods for replay in replays)
         if beatmap:
-            self.hit_objects = beatmap.hit_objects(hard_rock=self.use_hr, easy=self.use_ez)
+            self.hit_objects = beatmap.hit_objects(hard_rock=self.use_hr,
+                easy=self.use_ez)
             self.playback_end = self.get_hit_endtime(self.hit_objects[-1])
 
             ar = beatmap.ar(hard_rock=self.use_hr, easy=self.use_ez)
             od = beatmap.od(hard_rock=self.use_hr, easy=self.use_ez)
             cs = beatmap.cs(hard_rock=self.use_hr, easy=self.use_ez)
-            # https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate for formulas
+            # see https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate
             if ar <= 5:
                 self.preempt = 1200 + 600 * (5 - ar) / 5
                 self.fade_in = 800 + 400 * (5 - ar) / 5
@@ -156,12 +157,17 @@ class Renderer(QFrame):
         self.num_replays = len(replays)
         self.players = []
         for i, replay in enumerate(replays):
-            self.players.append(
-                Player(replay=replay,
-                       pen=QPen(QColor().fromHslF(i / self.num_replays, 0.75, 0.5)),))
-        self.playback_end = max(max(player.t) for player in self.players) if self.num_replays > 0 else self.playback_end
-        self.playback_start = min(min(player.t) for player in self.players) if self.num_replays > 0 else 0
-        # force 0 for replays with no negative frames
+            color = QColor().fromHslF(i / self.num_replays, 0.75, 0.5)
+            player = Player(replay=replay, pen=QPen(color))
+            self.players.append(player)
+
+        self.playback_start = 0
+        if self.num_replays > 0:
+            self.playback_start = min(min(player.t) for player in self.players)
+            self.playback_end = max(max(player.t) for player in self.players)
+
+        # always start at 0, unless our playback_start is negative (meaning we
+        # have negative frames)
         self.playback_start = min(self.playback_start, 0)
 
         # if our hitobjs are hard_rock versions, flip any player *without* hr
@@ -180,7 +186,8 @@ class Renderer(QFrame):
         # render stuff
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.next_frame_from_timer)
-        self.timer.start(1000/60) # 62 fps (1000ms/60frames but the result can only be a integer)
+        # 62 fps (1000ms / 60frames but the result can only be a integer)
+        self.timer.start(1000/60)
 
         # black background
         pal = QPalette()
@@ -235,10 +242,12 @@ class Renderer(QFrame):
             self.x_offset = (width - GAMEPLAY_WIDTH * y_scale) / 2
 
     def _x(self, position):
-        return self.x_offset + GAMEPLAY_PADDING_WIDTH + self.scaled_number(position)
+        return (self.x_offset + GAMEPLAY_PADDING_WIDTH +
+            self.scaled_number(position))
 
     def _y(self, position):
-        return self.y_offset + GAMEPLAY_PADDING_HEIGHT + self.scaled_number(position)
+        return (self.y_offset + GAMEPLAY_PADDING_HEIGHT +
+            self.scaled_number(position))
 
     def scaled_point(self, x, y):
         return QPointF(self._x(x), self._y(y))
@@ -248,9 +257,10 @@ class Renderer(QFrame):
 
     def next_frame_from_timer(self):
         """
-        Has the same effect as next_frame except if paused, where it returns. This is to allow
-        the back/forward buttons to advance frame by frame while still paused (as they connect directly to next
-        and previous frame), while still pausing the automatic timer advancement.
+        Has the same effect as next_frame except if paused, where it returns.
+        This is to allow the back/forward buttons to advance frame by frame
+        while still paused (as they connect directly to next and previous
+        frame), while still pausing the automatic timer advancement.
         """
         if self.paused:
             # ignore our paused state if we're still loading sliders, or else if
@@ -301,7 +311,10 @@ class Renderer(QFrame):
             # right side case
             if side == "right":
                 player.end_pos -= 1
-            player.start_pos = player.end_pos - self.num_frames_on_screen if player.end_pos >= self.num_frames_on_screen else 0
+
+            player.start_pos = 0
+            if player.end_pos >= self.num_frames_on_screen:
+                player.start_pos = player.end_pos - self.num_frames_on_screen
 
         if self.has_beatmap:
             self.get_hitobjects()
@@ -321,7 +334,7 @@ class Renderer(QFrame):
         while not found_all:
             current_hitobj = self.hit_objects[index]
             hit_t = current_hitobj.time.total_seconds() * 1000
-            if isinstance(current_hitobj, Slider) or isinstance(current_hitobj, Spinner):
+            if isinstance(current_hitobj, (Slider, Spinner)):
                 hit_end = self.get_hit_endtime(current_hitobj) + self.fade_in
             else:
                 hit_end = hit_t + self.hitwindow_50 + self.fade_in
@@ -336,9 +349,9 @@ class Renderer(QFrame):
                 found_all = True
             index += 1
 
-    def paintEvent(self, event):
+    def paintEvent(self, _event):
         """
-        Called whenever self.update() is called. Draws all cursors and Hitobjects
+        Called whenever self.update() is called
         """
         self.painter.begin(self)
         self.painter.setRenderHint(QPainter.TextAntialiasing, True)
@@ -396,7 +409,8 @@ class Renderer(QFrame):
         self.painter.setPen(pen)
         highlighted_pen = False
         for i in range(player.start_pos, player.end_pos):
-            highlight = any((player.t[i + 1] in self.events, player.t[i] in self.events))
+            highlight = any((player.t[i + 1] in self.events, player.t[i] in
+                self.events))
             if highlight and not highlighted_pen:
                 self.painter.setPen(PEN_HIGHLIGHT)
                 highlighted_pen = True
@@ -521,22 +535,26 @@ class Renderer(QFrame):
                 pen = player.pen
                 self.painter.setPen(PEN_BLANK)
                 self.painter.setBrush(QBrush(pen.color()))
-                _set_opacity(1 if Key.M1 in Key(int(player.k[player.end_pos])) else 0.3)
+                keys = Key(int(player.k[player.end_pos]))
+                _set_opacity(1 if Key.M1 in keys else 0.3)
                 self.painter.drawRect(5, y - 9, 10, 10)
-                _set_opacity(1 if Key.M2 in Key(int(player.k[player.end_pos])) else 0.3)
+                _set_opacity(1 if Key.M2 in keys else 0.3)
                 self.painter.drawRect(18, y - 9, 10, 10)
                 _set_opacity(1)
                 self.painter.setPen(pen)
                 info_text = (f"{player.username} {player.mods.short_name()}: "
-                    f"{player.xy[player.end_pos][0]:.2f}, {player.xy[player.end_pos][1]:.2f}")
+                    f"{player.xy[player.end_pos][0]:.2f}, "
+                    f"{player.xy[player.end_pos][1]:.2f}")
                 self.painter.drawText(31, y, info_text)
                 # not sure why we need to do ``y - 9`` instead of 9 here,
                 # our ``drawText`` call is perfectly happy to accept ``y`` but
                 # we need to pass ``y - 9`` to our ``drawRect`` calls...maybe 9
                 # was a manually determined number that causes the text to align
                 # with the drawn boxes?
-                info_pos = self.painter.boundingRect(5, y - 9, 0, 0, 0, info_text)
-                info_pos = Rect(info_pos.x(), info_pos.y(), info_pos.width(), info_pos.height())
+                info_pos = self.painter.boundingRect(5, y - 9, 0, 0, 0,
+                    info_text)
+                info_pos = Rect(info_pos.x(), info_pos.y(), info_pos.width(),
+                    info_pos.height())
                 # unfortunately the rects overlap if we don't make this manual
                 # adjustment; would like to figure out why but this works for
                 # now.
@@ -556,7 +574,8 @@ class Renderer(QFrame):
                     distance = math.sqrt(((p1.xy[p1.end_pos][0] - p2.xy[p2.end_pos][0]) ** 2) +
                                          ((p1.xy[p1.end_pos][1] - p2.xy[p2.end_pos][1]) ** 2))
                     self.painter.drawText(5, y, f"{int(distance)}px apart")
-                except IndexError: # Edge case where we only have data from one cursor
+                except IndexError:
+                    # we may only have data from one cursor at the moment
                     pass
 
             if self.num_replays == 1 and self.has_beatmap:
@@ -566,7 +585,8 @@ class Renderer(QFrame):
                 closest_hitobj = self.beatmap.closest_hitobject(current_t)
                 if self.use_hr:
                     closest_hitobj = closest_hitobj.hard_rock
-                distance = self.distance_between(player.xy[player.end_pos], closest_hitobj)
+                distance = self.distance_between(player.xy[player.end_pos],
+                    closest_hitobj)
 
                 # show "x px inside hitobj" instead of a negative distance
                 inside = False
@@ -574,7 +594,9 @@ class Renderer(QFrame):
                     inside = True
                     distance = abs(distance)
 
-                self.painter.drawText(5, y, f"{distance:0.2f}px {'inside' if inside else 'from'} closest hitobj")
+                inside_from = "inside" if inside else "from"
+                text = f"{distance:0.2f}px {inside_from} closest hitobj"
+                self.painter.drawText(5, y, text)
 
             for function in self.statistic_functions:
                 y += 13
@@ -586,7 +608,8 @@ class Renderer(QFrame):
 
     def draw_line(self, alpha, start, end, grey_out=False):
         """
-        Draws a line at the given alpha level from the start point to the end point.
+        Draws a line at the given alpha level from the start point to the end
+        point.
 
         Arguments:
             Float alpha: The alpha level (from 0.0 to 1.0) to set the line to.
@@ -600,7 +623,8 @@ class Renderer(QFrame):
             self.painter.setPen(PEN_GREY_INACTIVE)
 
         self.painter.setOpacity(alpha)
-        self.painter.drawLine(self.scaled_point(start[0], start[1]), self.scaled_point(end[0], end[1]))
+        self.painter.drawLine(self.scaled_point(start[0], start[1]),
+            self.scaled_point(end[0], end[1]))
 
         if self.raw_view and grey_out:
             self.painter.setPen(prev_pen)
@@ -873,7 +897,8 @@ class Renderer(QFrame):
         loading_bg.lineTo(self.width()/2 - 75 + 150, self.height() / 2)
 
         loading_bar.moveTo(self.width() / 2 - 75, self.height() / 2)
-        loading_bar.lineTo(self.width() / 2 - 75 + percentage * 1.5, self.height() / 2)
+        loading_bar.lineTo(self.width() / 2 - 75 + percentage * 1.5,
+            self.height() / 2)
 
         self.painter.drawPath(loading_bg)
         _pen.setColor(QColor(c.red(), c.green(), c.blue(), 255))
@@ -881,8 +906,11 @@ class Renderer(QFrame):
         self.painter.drawPath(loading_bar)
 
     def draw_loading_screen(self):
-        self.painter.drawText(self.width() / 2 - 75, self.height() / 2 - 10, "Calculating Sliders, please wait...")
-        self.draw_progressbar(int((self.sliders_current / self.num_sliders) * 100))
+        x = self.width() / 2 - 75
+        y = self.height() / 2 - 10
+        self.painter.drawText(x, y, "Calculating Sliders, please wait...")
+        progress = int((self.sliders_current / self.num_sliders) * 100)
+        self.draw_progressbar(progress)
 
     def process_sliders(self):
         for i, hitobj in enumerate(self.hit_objects):
@@ -986,7 +1014,9 @@ class Renderer(QFrame):
         return super().mousePressEvent(event)
 
     def get_hit_endtime(self, hitobj):
-        return hitobj.end_time.total_seconds() * 1000 if not isinstance(hitobj, Circle) else self.get_hit_time(hitobj)
+        if isinstance(hitobj, Circle):
+            return self.get_hit_time(hitobj)
+        return hitobj.end_time.total_seconds() * 1000
 
     def get_hit_time(self, hitobj):
         return hitobj.time.total_seconds() * 1000
@@ -1052,7 +1082,8 @@ class Renderer(QFrame):
             return
         use_hr = new_value == "HR"
         use_ez = new_value == "EZ"
-        self.hitcircle_radius = hitradius(self.beatmap.cs(hard_rock=use_hr, easy=use_ez))
+        cs = self.beatmap.cs(hard_rock=use_hr, easy=use_ez)
+        self.hitcircle_radius = hitradius(cs)
         self.update()
 
 
