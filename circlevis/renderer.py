@@ -51,6 +51,8 @@ GAMEPLAY_HEIGHT = 384
 # how high in pixels one half of the error bar should be (so the total height
 # is twice this).
 ERROR_BAR_HEIGHT = 3
+# how wide in pixels the full error bar should be (not just half of the width)
+ERROR_BAR_WIDTH = 170
 # hitobjs which were hit less than this threshold in ms will have an error bar
 # marker shown to indicate the hit
 ERROR_BAR_HIT_THRESHOLD = 4000
@@ -122,6 +124,10 @@ class Renderer(QFrame):
             self.hitwindow_50 = hitwindow_50
             self.hitwindow_100 = hitwindow_100
             self.hitwindow_300 = hitwindow_300
+
+            # how much to scale our error bar by from its 'standard' size, where
+            # each ms of error is a pixel.
+            self.error_bar_width_factor = ERROR_BAR_WIDTH / (hitwindow_50 * 2)
 
             self.hitcircle_radius = hitradius(cs)
             # loading stuff
@@ -794,26 +800,30 @@ class Renderer(QFrame):
         self.painter.setOpacity(0.65)
         self.painter.setPen(PEN_BLANK)
 
+        hw300 = self.hitwindow_300 * self.error_bar_width_factor
+        hw100 = self.hitwindow_100 * self.error_bar_width_factor
+        hw50 = self.hitwindow_50 * self.error_bar_width_factor
+
         self.painter.setBrush(BRUSH_BLUE)
-        p1 = self.scaled_point(mid_x - self.hitwindow_300, y - ERROR_BAR_HEIGHT)
-        p2 = self.scaled_point(mid_x + self.hitwindow_300, y + ERROR_BAR_HEIGHT)
+        p1 = self.scaled_point(mid_x - hw300, y - ERROR_BAR_HEIGHT)
+        p2 = self.scaled_point(mid_x + hw300, y + ERROR_BAR_HEIGHT)
         self.painter.drawRect(QRectF(p1, p2))
 
         # draw two rects to avoid overlapping with hitwindow_300 in the center
         self.painter.setBrush(BRUSH_GREEN)
-        p1 = self.scaled_point(mid_x - self.hitwindow_100, y - ERROR_BAR_HEIGHT)
-        p2 = self.scaled_point(mid_x - self.hitwindow_300, y + ERROR_BAR_HEIGHT)
+        p1 = self.scaled_point(mid_x - hw100, y - ERROR_BAR_HEIGHT)
+        p2 = self.scaled_point(mid_x - hw300, y + ERROR_BAR_HEIGHT)
         self.painter.drawRect(QRectF(p1, p2))
-        p1 = self.scaled_point(mid_x + self.hitwindow_300, y - ERROR_BAR_HEIGHT)
-        p2 = self.scaled_point(mid_x + self.hitwindow_100, y + ERROR_BAR_HEIGHT)
+        p1 = self.scaled_point(mid_x + hw300, y - ERROR_BAR_HEIGHT)
+        p2 = self.scaled_point(mid_x + hw100, y + ERROR_BAR_HEIGHT)
         self.painter.drawRect(QRectF(p1, p2))
 
         self.painter.setBrush(BRUSH_YELLOW)
-        p1 = self.scaled_point(mid_x - self.hitwindow_50, y - ERROR_BAR_HEIGHT)
-        p2 = self.scaled_point(mid_x - self.hitwindow_100, y + ERROR_BAR_HEIGHT)
+        p1 = self.scaled_point(mid_x - hw50, y - ERROR_BAR_HEIGHT)
+        p2 = self.scaled_point(mid_x - hw100, y + ERROR_BAR_HEIGHT)
         self.painter.drawRect(QRectF(p1, p2))
-        p1 = self.scaled_point(mid_x + self.hitwindow_100, y - ERROR_BAR_HEIGHT)
-        p2 = self.scaled_point(mid_x + self.hitwindow_50, y + ERROR_BAR_HEIGHT)
+        p1 = self.scaled_point(mid_x + hw100, y - ERROR_BAR_HEIGHT)
+        p2 = self.scaled_point(mid_x + hw50, y + ERROR_BAR_HEIGHT)
         self.painter.drawRect(QRectF(p1, p2))
 
         self.painter.setBrush(BRUSH_BLANK)
@@ -840,9 +850,9 @@ class Renderer(QFrame):
         current_time = self.clock.get_time()
 
         # positive is a late hit, negative is an early hit
-        error = hit.t - self.get_hit_time(hitobj)
-        start = [(mid_x + error), y - ERROR_BAR_HIT_HEIGHT]
-        end = [(mid_x + error), y + ERROR_BAR_HIT_HEIGHT]
+        error = (hit.t - self.get_hit_time(hitobj)) * self.error_bar_width_factor
+        start = [mid_x + error, y - ERROR_BAR_HIT_HEIGHT]
+        end = [mid_x + error, y + ERROR_BAR_HIT_HEIGHT]
 
         time_passed = current_time - hit.t
         # how long in ms to display hits for before they disappear
