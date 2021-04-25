@@ -54,8 +54,8 @@ GAMEPLAY_HEIGHT = 384
 ERROR_BAR_HEIGHT = 3
 # how wide in pixels the full error bar should be (not just half of the width)
 ERROR_BAR_WIDTH = 170
-# hitobjs which were hit less than this threshold in ms will have an error bar
-# marker shown to indicate the hit
+# hitobjs which were hit less time ago than this threshold in ms will have an
+# error bar marker shown to indicate the hit
 ERROR_BAR_HIT_THRESHOLD = 4000
 # width of each hit marker in pixels
 ERROR_BAR_HIT_WIDTH = 2
