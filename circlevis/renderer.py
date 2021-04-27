@@ -27,6 +27,8 @@ PEN_GRAY = QPen(QColor(75, 75, 75))
 PEN_GREY_INACTIVE = QPen(QColor(133, 125, 125))
 PEN_HIGHLIGHT = QPen(QColor(230, 212, 92))
 PEN_BLANK = QPen(QColor(0, 0, 0, 0))
+# for missed hitobjs
+PEN_RED_TINT = QPen(QColor(200, 150, 150))
 
 # for hit error bar markers and regions
 
@@ -43,6 +45,8 @@ BRUSH_WHITE = QBrush(QColor(200, 200, 200))
 BRUSH_GRAY = QBrush(QColor(100, 100, 100))
 BRUSH_DARKGRAY = QBrush(QColor(10, 10, 10))
 BRUSH_BLANK = QBrush(QColor(0, 0, 0, 0))
+# for missed hitobjs
+BRUSH_GRAY_RED_TINT = QBrush(QColor(110, 80, 80))
 
 GAMEPLAY_PADDING_WIDTH = 64 + 60
 GAMEPLAY_PADDING_HEIGHT = 48 + 20
@@ -694,10 +698,19 @@ class Renderer(QFrame):
         # have radius `self.hitcircle_radius`.
         r = self.scaled_number(self.hitcircle_radius - WIDTH_CIRCLE_BORDER / 2)
 
-        PEN_WHITE.setWidth(self.scaled_number(WIDTH_CIRCLE_BORDER))
+        if self.get_hit_time(hitobj) in self.hitobj_to_hits:
+            # hitobj was hit
+            pen = PEN_WHITE
+            brush = BRUSH_GRAY
+        else:
+            # hitobj was missed, tint red
+            pen = PEN_RED_TINT
+            brush = BRUSH_GRAY_RED_TINT
+
+        pen.setWidth(self.scaled_number(WIDTH_CIRCLE_BORDER))
+        self.painter.setPen(pen)
         self.painter.setOpacity(opacity)
-        self.painter.setPen(PEN_WHITE)
-        self.painter.setBrush(BRUSH_GRAY)
+        self.painter.setBrush(brush)
 
         self.painter.drawEllipse(self.scaled_point(p.x, p.y), r, r)
         self.painter.setBrush(BRUSH_BLANK)
@@ -737,8 +750,15 @@ class Renderer(QFrame):
         p = hitobj.position
         r = self.scaled_number(self.hitcircle_radius * scale)
 
-        PEN_WHITE.setWidth(self.scaled_number(WIDTH_CIRCLE_BORDER / 2))
-        self.painter.setPen(PEN_WHITE)
+        if self.get_hit_time(hitobj) in self.hitobj_to_hits:
+            # hitobj was hit
+            pen = PEN_WHITE
+        else:
+            # hitobj was missed, tint red
+            pen = PEN_RED_TINT
+
+        pen.setWidth(self.scaled_number(WIDTH_CIRCLE_BORDER / 2))
+        self.painter.setPen(pen)
         self.painter.setOpacity(opacity)
         self.painter.drawEllipse(self.scaled_point(p.x, p.y), r, r)
 
