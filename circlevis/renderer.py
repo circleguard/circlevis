@@ -470,9 +470,6 @@ class Renderer(QFrame):
     def paint_info(self):
         """
         Draws various info about the replays in the upper left corner.
-
-        Args:
-           QPainter painter: The painter.
         """
         # our current y coordinate for drawing info. Modified throughout this
         # function
@@ -669,11 +666,7 @@ class Renderer(QFrame):
 
     def draw_hitobject(self, hitobj):
         """
-        Calls corresponding functions to draw a Hitobject.
-
-        Args:
-            QPainter painter: The painter.
-            Hitobj hitobj: A Hitobject.
+        Calls the corresponding function to draw ``hitobj``.
         """
         if not self.draw_hitobjects:
             return
@@ -687,11 +680,7 @@ class Renderer(QFrame):
 
     def draw_hitcircle(self, hitobj):
         """
-        Draws Hitcircle.
-
-        Args:
-            QPainter painter: The painter.
-            Hitobj hitobj: A Hitobject.
+        Draws a circle hitobject.
         """
         current_time = self.clock.get_time()
         fade_out = max(0, ((current_time - self.get_hit_time(hitobj)) / self.hitwindow_50))
@@ -715,11 +704,7 @@ class Renderer(QFrame):
 
     def draw_spinner(self, hitobj):
         """
-        Draws Spinner.
-
-        Args:
-            QPainter painter: The painter.
-            Hitobj hitobj: A Hitobject.
+        Draws a spinner hitobject.
         """
         current_time = self.clock.get_time()
         if self.get_hit_endtime(hitobj) - current_time < 0:
@@ -739,11 +724,7 @@ class Renderer(QFrame):
 
     def draw_approachcircle(self, hitobj):
         """
-        Draws Approachcircle.
-
-        Args:
-            QPainter painter: The painter.
-            Hitobj hitobj: A Hitobject.
+        Draws the approach circle of a circle hitobject.
         """
         if not self.draw_approach_circles:
             return
@@ -763,11 +744,7 @@ class Renderer(QFrame):
 
     def draw_slider(self, hitobj):
         """
-        Draws sliderbody and hitcircle & approachcircle if needed
-
-        Args:
-            QPainter painter: The painter.
-            Hitobj hitobj: A Hitobject.
+        Draws sliderbody, hitcircle, approachcircle if needed
         """
         self.draw_sliderbody(hitobj)
         self.draw_hitcircle(hitobj)
@@ -775,11 +752,7 @@ class Renderer(QFrame):
 
     def draw_sliderbody(self, hitobj):
         """
-        Draws a sliderbody using a QpainterPath.
-
-        Args:
-            QPainter painter: The painter.
-            Hitobj hitobj: A Hitobject.
+        Draws the sliderbody of a slider using a QpainterPath.
         """
 
         current_time = self.clock.get_time()
