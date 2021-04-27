@@ -190,7 +190,7 @@ class Interface(QWidget):
             ur, frametime, snaps, judgments = self.replay_statistics_precalculated[replay]
             replay_info = ReplayInfo(replay, self.library.path, ur, frametime,
                 snaps, judgments, self.snaps_args)
-            replay_info.seek_to.connect(self.renderer.seek_to)
+            replay_info.seek_to.connect(self.seek_to)
 
         # don't show two of the same info panels at once
         if self.current_replay_info is not None:
@@ -209,6 +209,10 @@ class Interface(QWidget):
         self.splitter.insertWidget(0, replay_info)
         self.current_replay_info = replay_info
         self.replay_info_cache[replay] = replay_info
+
+    def seek_to(self, time):
+        self.renderer.pause()
+        self.renderer.seek_to(time)
 
     def calculate_cg_statistics(self):
         cg = KeylessCircleguard()
