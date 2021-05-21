@@ -11,7 +11,7 @@ from PyQt5.QtWidgets import QFrame
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPointF, QRectF, QRect
 from slider.beatmap import Circle, Slider, Spinner
 from circleguard import (Mod, Key, hitradius, hitwindows, HitType,
-    KeylessCircleguard)
+    KeylessCircleguard, Miss)
 
 from circlevis.clock import Timer
 from circlevis.player import Player
@@ -212,15 +212,15 @@ class Renderer(QFrame):
 
         self.next_frame()
 
-        self.hitobj_to_hits = {}
+        self.hitobj_to_judgments = {}
         if self.num_replays == 1:
             r = replays[0]
             cg = KeylessCircleguard()
-            self.hits = cg.hits(r, beatmap=self.beatmap)
-            # associate each hitobject with a hit. Only hitobjs which were
-            # missed or are spinners won't be associated in this mapping (since
-            # we have no hit for them)
-            for hit in self.hits:
+            self.judgments = cg.judgments(r, beatmap=self.beatmap)
+            # associate each hitobject with a judgment. Only hitobjs which are
+            # spinners won't be associated in this mapping (since core doesn't
+            # generate a judgment for them yet)
+            for judgment in self.judgments:
                 # use the hitobj time as our key. This will work fine for ranked
                 # maps (no two hitobjs can be placed at the same time) but may
                 # break for aspire, loved, or crazy graveyarded maps. Needs
@@ -228,7 +228,7 @@ class Renderer(QFrame):
                 # A way around this is to simply store the slider hitobj in
                 # circlecore's hitobjs, or convert core to using slider's
                 # hitobjs again (or make them subclasses, or some such)
-                self.hitobj_to_hits[hit.hitobject.t] = hit
+                self.hitobj_to_judgments[judgment.hitobject.t] = judgment
 
 
     def resizeEvent(self, event):
@@ -461,15 +461,18 @@ class Renderer(QFrame):
             self.draw_hit_error_bar()
 
             for hitobj in self.hitobjs_to_draw_hits_for:
-                # this hitobj won't be in our dict if it was never hit (either
-                # is a spinner or was missed)
-                if self.get_hit_time(hitobj) not in self.hitobj_to_hits:
+                # core doesn't calculate judgmnets for spinners yet, TODO
+                # implement this when core does
+                if isinstance(hitobj, Spinner):
                     continue
 
-                hit = self.hitobj_to_hits[self.get_hit_time(hitobj)]
+                judgment = self.hitobj_to_judgments[self.get_hit_time(hitobj)]
+                # don't draw any judgment bars for misses
+                if isinstance(judgment, Miss):
+                    continue
                 # don't draw hits that haven't happened yet
-                if hit.t <= self.clock.get_time():
-                    self.draw_hit(hitobj, hit)
+                if judgment.t <= self.clock.get_time():
+                    self.draw_hit(hitobj, judgment)
 
     def paint_info(self):
         """
@@ -698,14 +701,15 @@ class Renderer(QFrame):
         # have radius `self.hitcircle_radius`.
         r = self.scaled_number(self.hitcircle_radius - WIDTH_CIRCLE_BORDER / 2)
 
-        if self.get_hit_time(hitobj) in self.hitobj_to_hits:
-            # hitobj was hit
-            pen = PEN_WHITE
-            brush = BRUSH_GRAY
-        else:
+        judgment = self.hitobj_to_judgments[self.get_hit_time(hitobj)]
+        if isinstance(judgment, Miss):
             # hitobj was missed, tint red
             pen = PEN_RED_TINT
             brush = BRUSH_GRAY_RED_TINT
+        else:
+            # hitobj was hit
+            pen = PEN_WHITE
+            brush = BRUSH_GRAY
 
         pen.setWidth(self.scaled_number(WIDTH_CIRCLE_BORDER))
         self.painter.setPen(pen)
@@ -750,12 +754,13 @@ class Renderer(QFrame):
         p = hitobj.position
         r = self.scaled_number(self.hitcircle_radius * scale)
 
-        if self.get_hit_time(hitobj) in self.hitobj_to_hits:
-            # hitobj was hit
-            pen = PEN_WHITE
-        else:
+        judgment = self.hitobj_to_judgments[self.get_hit_time(hitobj)]
+        if isinstance(judgment, Miss):
             # hitobj was missed, tint red
             pen = PEN_RED_TINT
+        else:
+            # hitobj was hit
+            pen = PEN_WHITE
 
         pen.setWidth(self.scaled_number(WIDTH_CIRCLE_BORDER / 2))
         self.painter.setPen(pen)
@@ -1009,10 +1014,15 @@ class Renderer(QFrame):
     def get_hit_endtime(self, hitobj):
         if isinstance(hitobj, Circle):
             return self.get_hit_time(hitobj)
-        return hitobj.end_time.total_seconds() * 1000
+        t = hitobj.end_time.total_seconds() * 1000
+        return int(round(t))
 
     def get_hit_time(self, hitobj):
-        return hitobj.time.total_seconds() * 1000
+        t = hitobj.time.total_seconds() * 1000
+        # Due to floating point errors, ``t`` could actually be something
+        # like ``129824.99999999999`` or ``128705.00000000001``, so round to the
+        # nearest int.
+        return int(round(t))
 
     def pause(self):
         """
