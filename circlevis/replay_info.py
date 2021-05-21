@@ -40,8 +40,15 @@ class ReplayInfo(QFrame):
         circleguard = KeylessCircleguard(slider_dir=slider_dir)
 
         mods = replay.mods.short_name()
-        info_label = QLabel(f"{replay.username} +{mods} on map {replay.map_id}")
+
+        info_label = QLabel("<a href=\"https://osu.ppy.sh/scores/osu/"
+            f"{replay.replay_id}\">{replay.username} +{mods}</a> "
+            "on map "
+            f"<a href=\"https://osu.ppy.sh/b/{replay.map_id}\">{replay.map_id}"
+            "</a>")
         info_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        info_label.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        info_label.setOpenExternalLinks(True)
         info_label.setCursor(QCursor(Qt.IBeamCursor))
 
         if replay.map_info.available():
