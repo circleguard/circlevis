@@ -219,7 +219,7 @@ class Interface(QWidget):
         for replay in self.replays:
             ur = None
             judgments = None
-            if replay.map_info.available():
+            if cg.map_available(replay):
                 ur = cg.ur(replay)
                 judgments = cg.judgments(replay)
 

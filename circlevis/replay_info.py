@@ -51,7 +51,7 @@ class ReplayInfo(QFrame):
         info_label.setOpenExternalLinks(True)
         info_label.setCursor(QCursor(Qt.IBeamCursor))
 
-        if replay.map_info.available():
+        if circleguard.map_available(replay):
             ur = ur or circleguard.ur(replay)
             ucv_ur = round(convert_statistic(ur, replay.mods, to="ucv"), 2)
             ur = round(ur, 2)
@@ -90,7 +90,7 @@ class ReplayInfo(QFrame):
         misses = []
         hit100s = []
         hit50s = []
-        if replay.map_info.available():
+        if circleguard.map_available(replay):
             judgments = judgments or circleguard.judgments(replay)
             for judgment in judgments:
                 if isinstance(judgment, Miss):
