@@ -211,7 +211,7 @@ class Interface(QWidget):
         self.replay_info_cache[replay] = replay_info
 
     def seek_to(self, time):
-        self.renderer.pause()
+        self.force_pause()
         self.renderer.seek_to(time)
 
     def calculate_cg_statistics(self):
