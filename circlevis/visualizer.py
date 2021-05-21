@@ -102,6 +102,8 @@ class Visualizer(QMainWindow):
     def force_unpause(self):
         self.interface.force_unpause()
 
+    def save_as_image(self):
+        return self.grab().toImage()
 
 class VisualizerApp(QApplication):
     """
@@ -176,3 +178,6 @@ class VisualizerApp(QApplication):
 
     def force_unpause(self):
         self.visualizer.force_unpause()
+
+    def save_as_image(self):
+        return self.visualizer.grab().toImage()
