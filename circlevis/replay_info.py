@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (QLabel, QVBoxLayout, QFrame, QAbstractItemView,
     QTableWidget, QTableWidgetItem)
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QCursor
-from circleguard import KeylessCircleguard, HitType, Miss, convert_statistic
+from circleguard import KeylessCircleguard, JudgmentType, Miss, convert_statistic
 
 from circlevis.widgets import PushButton
 
@@ -93,12 +93,12 @@ class ReplayInfo(QFrame):
         if circleguard.map_available(replay):
             judgments = judgments or circleguard.judgments(replay)
             for judgment in judgments:
-                if isinstance(judgment, Miss):
+                if judgment.type is JudgmentType.Miss:
                     misses.append(MissEvent(judgment))
                 else:
-                    if judgment.type is HitType.Hit100:
+                    if judgment.type is JudgmentType.Hit100:
                         hit100s.append(Hit100Event(judgment))
-                    if judgment.type is HitType.Hit50:
+                    if judgment.type is JudgmentType.Hit50:
                         hit50s.append(Hit50Event(judgment))
                     if judgment.within(self.EDGE_HIT_THRESH):
                         edge_hits.append(EdgeHitEvent(judgment))

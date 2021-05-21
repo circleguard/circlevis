@@ -10,8 +10,8 @@ from PyQt5.QtGui import (QBrush, QPen, QColor, QPalette, QPainter, QPainterPath,
 from PyQt5.QtWidgets import QFrame
 from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPointF, QRectF, QRect
 from slider.beatmap import Circle, Slider, Spinner
-from circleguard import (Mod, Key, hitradius, hitwindows, HitType,
-    KeylessCircleguard, Miss)
+from circleguard import (Mod, Key, hitradius, hitwindows, JudgmentType,
+    KeylessCircleguard)
 
 from circlevis.clock import Timer
 from circlevis.player import Player
@@ -48,6 +48,13 @@ BRUSH_BLANK = QBrush(QColor(0, 0, 0, 0))
 # for missed hitobjs
 BRUSH_GRAY_RED_TINT = QBrush(QColor(110, 80, 80))
 
+# for judgment indicators. red, yellow, and blue respectively
+# TODO use QRadialGradient for judgment brushes to more closely mimic karthy's
+# skin, couldn't figure out how to use them though lol
+BRUSH_JUDGMENT_MISS = QBrush(QColor(200, 27, 27))
+BRUSH_JUDGMENT_50 = QBrush(QColor(24, 75, 242))
+BRUSH_JUDGMENT_100 = QBrush(QColor(36, 171, 72))
+
 GAMEPLAY_PADDING_WIDTH = 64 + 60
 GAMEPLAY_PADDING_HEIGHT = 48 + 20
 GAMEPLAY_WIDTH = 512
@@ -64,6 +71,13 @@ ERROR_BAR_HIT_THRESHOLD = 4000
 # width of each hit marker in pixels
 ERROR_BAR_HIT_WIDTH = 2
 ERROR_BAR_HIT_HEIGHT = 8
+
+# radius of judgment indicator circles for 50s, 100s, 300s, misses
+JUDGMENT_INDICATOR_RADIUS = 6
+
+# hitobjs which were hit less time ago than this threshold in ms will have an
+# error bar marker shown to indicate the hit
+JUDGMENT_INDICATOR_THRESHOLD = 1000
 
 SLIDER_TICKRATE = 50
 
@@ -107,6 +121,13 @@ class Renderer(QFrame):
         # drawing error bar markers, so keep track of those hitobjs here.
         # this will (should) be a superset of ``hitobjs_to_draw``
         self.hitobjs_to_draw_hits_for = []
+        # and we care about *less* than the hitobjs in hitobjs_to_draw when
+        # drawing judgment indicators, since these disappear sooner. This will
+        # be a subset of ``hitobjs_to_draw``.
+        # TODO clean up this code, these lists shouldn't exist, instead hitobjs
+        # should be marked with ``draw_judgment_indicators_for`` attributes
+        # or something
+        self.hitobjs_to_draw_judgment_indicators_for = []
 
         self.use_hr = any(Mod.HR in replay.mods for replay in replays)
         self.use_ez = any(Mod.EZ in replay.mods for replay in replays)
@@ -209,6 +230,9 @@ class Renderer(QFrame):
         self.num_frames_on_screen = 15
         self.only_color_keydowns = False
         self.should_draw_hit_error_bar = True
+        # TODO expose this as a setting somewhere? it's not toggleable anywhere
+        # currently
+        self.should_draw_judgment_indicators = True
 
         self.next_frame()
 
@@ -335,6 +359,7 @@ class Renderer(QFrame):
         index = 0
         self.hitobjs_to_draw = []
         self.hitobjs_to_draw_hits_for = []
+        self.hitobjs_to_draw_judgment_indicators_for = []
         while not found_all:
             current_hitobj = self.hit_objects[index]
             hit_t = current_hitobj.time.total_seconds() * 1000
@@ -342,6 +367,8 @@ class Renderer(QFrame):
                 hit_end = self.get_hit_endtime(current_hitobj) + self.fade_in
             else:
                 hit_end = hit_t + self.hitwindow_50 + self.fade_in
+            if hit_t > current_time - JUDGMENT_INDICATOR_THRESHOLD:
+                self.hitobjs_to_draw_judgment_indicators_for.append(current_hitobj)
             if hit_t > current_time - ERROR_BAR_HIT_THRESHOLD:
                 self.hitobjs_to_draw_hits_for.append(current_hitobj)
             if hit_t - self.preempt < current_time < hit_end:
@@ -453,6 +480,29 @@ class Renderer(QFrame):
         self.painter.setOpacity(1)
 
     def paint_beatmap(self):
+        # draw playfield judgment indicators (yellow/green/blue circles under
+        # hitobjs) before drawing hitobjs so they don't cover hitobjs
+        # (though to be honest it doesn't make much of a difference either way)
+
+        if self.should_draw_judgment_indicators and self.num_replays == 1:
+            for hitobj in self.hitobjs_to_draw_hits_for:
+                if isinstance(hitobj, Spinner):
+                    continue
+
+                judgment = self.hitobj_to_judgments[self.get_hit_time(hitobj)]
+
+                if judgment.type is JudgmentType.Miss:
+                    # misses don't have an intrinsic event time, so just use
+                    # their hitobj's time
+                    t = judgment.hitobject.time
+                else:
+                    t = judgment.time
+
+                # don't draw hits that haven't happened yet
+                if t <= self.clock.get_time():
+                    self.draw_judgment_indicator(hitobj, judgment)
+            self.painter.setBrush(BRUSH_BLANK)
+
         for hitobj in self.hitobjs_to_draw[::-1]:
             self.draw_hitobject(hitobj)
 
@@ -468,7 +518,7 @@ class Renderer(QFrame):
 
                 judgment = self.hitobj_to_judgments[self.get_hit_time(hitobj)]
                 # don't draw any judgment bars for misses
-                if isinstance(judgment, Miss):
+                if judgment.type is JudgmentType.Miss:
                     continue
                 # don't draw hits that haven't happened yet
                 if judgment.t <= self.clock.get_time():
@@ -702,7 +752,7 @@ class Renderer(QFrame):
         r = self.scaled_number(self.hitcircle_radius - WIDTH_CIRCLE_BORDER / 2)
 
         judgment = self.hitobj_to_judgments[self.get_hit_time(hitobj)]
-        if isinstance(judgment, Miss):
+        if judgment.type is JudgmentType.Miss:
             # hitobj was missed, tint red
             pen = PEN_RED_TINT
             brush = BRUSH_GRAY_RED_TINT
@@ -755,7 +805,7 @@ class Renderer(QFrame):
         r = self.scaled_number(self.hitcircle_radius * scale)
 
         judgment = self.hitobj_to_judgments[self.get_hit_time(hitobj)]
-        if isinstance(judgment, Miss):
+        if judgment.type is JudgmentType.Miss:
             # hitobj was missed, tint red
             pen = PEN_RED_TINT
         else:
@@ -849,11 +899,11 @@ class Renderer(QFrame):
         mid_x = GAMEPLAY_WIDTH / 2
         y = GAMEPLAY_HEIGHT - ERROR_BAR_HIT_HEIGHT
 
-        if hit.type is HitType.Hit300:
+        if hit.type is JudgmentType.Hit300:
             pen = PEN_BLUE
-        elif hit.type is HitType.Hit100:
+        elif hit.type is JudgmentType.Hit100:
             pen = PEN_GREEN
-        elif hit.type is HitType.Hit50:
+        elif hit.type is JudgmentType.Hit50:
             pen = PEN_YELLOW
 
         self.painter.setPen(pen)
@@ -878,6 +928,39 @@ class Renderer(QFrame):
         f = interpolate.interp1d(x_interp, y_interp)
         alpha = f(time_passed)
         self.draw_line(alpha, start, end)
+
+    def draw_judgment_indicator(self, hitobj, judgment):
+        if judgment.type is JudgmentType.Hit300:
+            # don't draw anything for 300s
+            return
+
+        if judgment.type is JudgmentType.Miss:
+            brush = BRUSH_JUDGMENT_MISS
+            judgment_t = judgment.hitobject.time
+        else:
+            judgment_t = judgment.time
+        if judgment.type is JudgmentType.Hit50:
+            brush = BRUSH_JUDGMENT_50
+        if judgment.type is JudgmentType.Hit100:
+            brush = BRUSH_JUDGMENT_100
+
+        self.painter.setPen(PEN_BLANK)
+        self.painter.setBrush(brush)
+
+        current_time = self.clock.get_time()
+
+        time_passed = current_time - judgment_t
+        time_passed = min(time_passed, JUDGMENT_INDICATOR_THRESHOLD)
+        x_interp = [0, JUDGMENT_INDICATOR_THRESHOLD]
+        y_interp = [1, 0]
+        f = interpolate.interp1d(x_interp, y_interp)
+        alpha = f(time_passed)
+
+        self.painter.setOpacity(alpha)
+
+        p = hitobj.position
+        r = self.scaled_number(JUDGMENT_INDICATOR_RADIUS)
+        self.painter.drawEllipse(self.scaled_point(p.x, p.y), r, r)
 
     def draw_progressbar(self, percentage):
         loading_bg = QPainterPath()
