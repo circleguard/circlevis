@@ -53,7 +53,7 @@ BRUSH_GRAY_RED_TINT = QBrush(QColor(110, 80, 80))
 # skin, couldn't figure out how to use them though lol
 BRUSH_JUDGMENT_MISS = QBrush(QColor(200, 27, 27))
 BRUSH_JUDGMENT_50 = QBrush(QColor(24, 75, 242))
-BRUSH_JUDGMENT_100 = QBrush(QColor(36, 171, 72))
+BRUSH_JUDGMENT_100 = QBrush(QColor(36, 181, 75))
 
 GAMEPLAY_PADDING_WIDTH = 64 + 60
 GAMEPLAY_PADDING_HEIGHT = 48 + 20
