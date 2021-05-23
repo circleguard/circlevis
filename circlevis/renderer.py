@@ -751,15 +751,16 @@ class Renderer(QFrame):
         # have radius `self.hitcircle_radius`.
         r = self.scaled_number(self.hitcircle_radius - WIDTH_CIRCLE_BORDER / 2)
 
-        judgment = self.hitobj_to_judgments[self.get_hit_time(hitobj)]
-        if judgment.type is JudgmentType.Miss:
-            # hitobj was missed, tint red
-            pen = PEN_RED_TINT
-            brush = BRUSH_GRAY_RED_TINT
-        else:
-            # hitobj was hit
-            pen = PEN_WHITE
-            brush = BRUSH_GRAY
+        # normal white hitobj
+        pen = PEN_WHITE
+        brush = BRUSH_GRAY
+
+        if self.num_replays == 1:
+            judgment = self.hitobj_to_judgments[self.get_hit_time(hitobj)]
+            if judgment.type is JudgmentType.Miss:
+                # hitobj was missed, tint red
+                pen = PEN_RED_TINT
+                brush = BRUSH_GRAY_RED_TINT
 
         pen.setWidth(self.scaled_number(WIDTH_CIRCLE_BORDER))
         self.painter.setPen(pen)
@@ -804,13 +805,13 @@ class Renderer(QFrame):
         p = hitobj.position
         r = self.scaled_number(self.hitcircle_radius * scale)
 
-        judgment = self.hitobj_to_judgments[self.get_hit_time(hitobj)]
-        if judgment.type is JudgmentType.Miss:
-            # hitobj was missed, tint red
-            pen = PEN_RED_TINT
-        else:
-            # hitobj was hit
-            pen = PEN_WHITE
+        pen = PEN_WHITE
+
+        if self.num_replays == 1:
+            judgment = self.hitobj_to_judgments[self.get_hit_time(hitobj)]
+            if judgment.type is JudgmentType.Miss:
+                # hitobj was missed, tint red
+                pen = PEN_RED_TINT
 
         pen.setWidth(self.scaled_number(WIDTH_CIRCLE_BORDER / 2))
         self.painter.setPen(pen)
