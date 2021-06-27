@@ -237,9 +237,11 @@ class Renderer(QFrame):
         self.next_frame()
 
         self.hitobj_to_judgments = {}
-        if self.num_replays == 1:
+        cg = KeylessCircleguard()
+        self.can_access_judgments = self.num_replays == 1 and cg.map_available(replays[0])
+        if self.can_access_judgments:
             r = replays[0]
-            cg = KeylessCircleguard()
+
             self.judgments = cg.judgments(r, beatmap=self.beatmap)
             # associate each hitobject with a judgment. Only hitobjs which are
             # spinners won't be associated in this mapping (since core doesn't
@@ -484,7 +486,7 @@ class Renderer(QFrame):
         # hitobjs) before drawing hitobjs so they don't cover hitobjs
         # (though to be honest it doesn't make much of a difference either way)
 
-        if self.should_draw_judgment_indicators and self.num_replays == 1:
+        if self.should_draw_judgment_indicators and self.can_access_judgments:
             for hitobj in self.hitobjs_to_draw_hits_for:
                 if isinstance(hitobj, Spinner):
                     continue
@@ -507,7 +509,7 @@ class Renderer(QFrame):
             self.draw_hitobject(hitobj)
 
         # only draw hit error bars if there's only one replay
-        if self.should_draw_hit_error_bar and self.num_replays == 1:
+        if self.should_draw_hit_error_bar and self.can_access_judgments:
             self.draw_hit_error_bar()
 
             for hitobj in self.hitobjs_to_draw_hits_for:
@@ -755,7 +757,7 @@ class Renderer(QFrame):
         pen = PEN_WHITE
         brush = BRUSH_GRAY
 
-        if self.num_replays == 1:
+        if self.can_access_judgments:
             judgment = self.hitobj_to_judgments[self.get_hit_time(hitobj)]
             if judgment.type is JudgmentType.Miss:
                 # hitobj was missed, tint red
@@ -807,7 +809,7 @@ class Renderer(QFrame):
 
         pen = PEN_WHITE
 
-        if self.num_replays == 1:
+        if self.can_access_judgments:
             judgment = self.hitobj_to_judgments[self.get_hit_time(hitobj)]
             if judgment.type is JudgmentType.Miss:
                 # hitobj was missed, tint red
