@@ -70,7 +70,7 @@ visualizer_widget = Visualizer(bm, replays=[r])
 # add visualizer_widget to your layout here
 ```
 
-## Advanced Usage
+### Other Arguments
 
 Both `VisualizerApp` and `Visualizer` can take several optional arguments:
 
