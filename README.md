@@ -54,7 +54,7 @@ app.exec()
 
 ### Visualizer
 
-If you want to integrate the visualizer into an existing project (which already has its own `QApplication`), you should instead instantiate the `Visualizer` class, which is a normal `Qt` widget and can be added to a layout like any other widget.
+If you want to integrate the visualizer into an existing project (which already has its own `QApplication`), you should instead instantiate the `Visualizer` class. `Visualizer` subclasses `QMainWindow` instead of `QApplication` and can be used like any other widget.
 
 ```python
 from circleguard import *
@@ -65,9 +65,9 @@ r = ReplayMap(509610, 6304246)
 cg.load(r)
 
 bm = BeatmapInfo(map_id=r.map_id)
-visualizer_widget = Visualizer(bm, replays=[r])
-
-# add visualizer_widget to your layout here
+visualizer_window = Visualizer(bm, replays=[r])
+visualizer_window.show()
+# or do something fancy with it instead of showing it immediately
 ```
 
 ### Other Arguments
