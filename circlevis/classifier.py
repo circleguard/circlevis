@@ -61,6 +61,7 @@ class Classifier:
         try:
             replay = next(self._replays)
         except StopIteration:
+            self.done()
             return
 
         self.load(replay)
@@ -96,3 +97,9 @@ class Classifier:
         for example.
         """
         return False
+
+    def done(self):
+        """
+        Called when the classifier has finished classifying all of its replays.
+        """
+        pass
