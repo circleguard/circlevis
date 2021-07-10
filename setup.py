@@ -36,7 +36,8 @@ setup(
     packages=find_packages(),
     install_requires=[
         "circleguard >= 5.2.1, <6.0.0",
-        "slider >= 0.4.0"
+        "slider >= 0.4.0",
+        "PyQt5"
     ],
     package_data={"circlevis": ["resources/*"]}
 )

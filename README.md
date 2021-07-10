@@ -2,7 +2,7 @@
 
 Circlevis is the replay viewer (aka visualizer) in [Circleguard](https://github.com/circleguard/circleguard). It was split off into its own repository to allow other projects to use it, should they so choose.
 
-Circlevis is a [Qt](https://doc.qt.io/) widget, and will only work if you are using the Qt (or [pyqt](https://pypi.org/project/PyQt5/), as we are) GUI framwork.
+Circlevis is a [pyqt](https://pypi.org/project/PyQt5/) widget.
 
 ## Installation
 
@@ -82,9 +82,9 @@ Both `VisualizerApp` and `Visualizer` can take several optional arguments:
 
 ## Classifier
 
-Circlevis also provides a `Classifier` class, which builds on the visualizer to provide an easy way to batch classify replays one at a time. For instance, imagine you want to go through a map's leaderboard and assign a "cursordance score" to each replay, depending on how often the user cursordanced.
+Circlevis also provides a `Classifier` class, which builds on the visualizer to provide an easy way to batch classify replays one at a time. For instance, imagine you want to go through a map's leaderboard and assign a "cursordance score" to each replay, depending on how often the user cursordanced. The classifier will show you the first replay and wait for you to press a number key that assigns a cursordance score to that replay. When you do so, it saves the score and shows the next replay. Repeat until all replays are classified.
 
-To use, you need a list of hotkeys that you will use to control the classification of the replays, a circleguard instance, and a list of replays. Here's an example for the aforementioned "cursordance scoring" use case, where you can assign replays a score from 1 to 10:
+To use, you need a list of hotkeys that you will use to control the classification of the replays, a circleguard instance, and a list of Replay instances. Here's an example for the aforementioned "cursordance scoring" use case, where you can assign replays a score from 1 to 10:
 
 ```python
 from collections import defaultdict
