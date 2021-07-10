@@ -103,8 +103,8 @@ class ReplayInfo(QFrame):
                     if judgment.within(self.EDGE_HIT_THRESH):
                         edge_hits.append(EdgeHitEvent(judgment))
 
-        events.extend(misses)
         events.extend(snap_events)
+        events.extend(misses)
         events.extend(edge_hits)
         events.extend(hit100s)
         events.extend(hit50s)
