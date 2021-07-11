@@ -33,11 +33,15 @@ class Interface(QWidget):
         for replay in replays:
             self.replay_statistics_precalculated[replay] = (None, None, None, None)
 
-        # and here's the thread which will actually start those calculations
-        cg_statistics_worked = Thread(target=self.calculate_cg_statistics)
-        # allow users to quit before we're done calculating
-        cg_statistics_worked.daemon = True
-        cg_statistics_worked.start()
+        # if 5 or less replays are loaded, preload replay statistics
+        # otherwise visualiser will heavily slow down and lag until all replay
+        # data is loaded.
+        if len(replays) <= 5:
+            # and here's the thread which will actually start those calculations
+            cg_statistics_worked = Thread(target=self.calculate_cg_statistics)
+            # allow users to quit before we're done calculating
+            cg_statistics_worked.daemon = True
+            cg_statistics_worked.start()
 
         # create our own library in a temp dir if one wasn't passed
         if not self.library:
