@@ -107,8 +107,7 @@ class Interface(QWidget):
         self.setLayout(layout)
 
     def play_normal(self):
-        self.renderer.resume()
-        self.controls.set_paused_state(False)
+        self.force_unpause()
         self.renderer.play_direction = 1
         self.update_speed(abs(self.renderer.clock.current_speed))
 
@@ -116,8 +115,7 @@ class Interface(QWidget):
         self.controls.time_slider.setValue(value)
 
     def play_reverse(self):
-        self.renderer.resume()
-        self.controls.set_paused_state(False)
+        self.force_unpause()
         self.renderer.play_direction = -1
         self.update_speed(abs(self.renderer.clock.current_speed))
 
@@ -125,10 +123,7 @@ class Interface(QWidget):
         self.renderer.clock.change_speed(speed * self.renderer.play_direction)
 
     def change_frame(self, reverse):
-        # only change pause state if we're not paused, this way we don't unpause
-        # when changing frames
-        if not self.renderer.paused:
-            self.pause()
+        self.force_pause()
         self.renderer.search_nearest_frame(reverse=reverse)
 
     def pause(self):
