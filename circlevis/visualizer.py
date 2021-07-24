@@ -33,26 +33,18 @@ class Visualizer(QMainWindow):
             speeds, start_speed, paint_info, statistic_functions, snaps_args)
         self.setCentralWidget(self.interface)
 
-        QShortcut(QKeySequence(Qt.Key_Space), self, self.interface.pause)
-        QShortcut(QKeySequence(Qt.Key_Right), self, \
-            lambda: self.interface.change_frame(reverse=False))
-        QShortcut(QKeySequence(Qt.Key_Left), self, \
-            lambda: self.interface.change_frame(reverse=True))
-        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_Right), self, \
-            self.interface.play_normal)
-        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_Left), self, \
-            self.interface.play_reverse)
-        QShortcut(QKeySequence(Qt.Key_Up), self, \
-            self.interface.increase_speed)
-        QShortcut(QKeySequence(Qt.Key_Down), self, \
-            self.interface.lower_speed)
-        QShortcut(QKeySequence(Qt.CTRL + Qt.Key_F11), self, \
-            lambda: self.interface.renderer.toggle_frametime)
+        QShortcut(Qt.Key_Space, self, self.interface.pause)
+        QShortcut(Qt.Key_Right, self, lambda: self.interface.change_frame(reverse=False))
+        QShortcut(Qt.Key_Left, self, lambda: self.interface.change_frame(reverse=True))
+        QShortcut(Qt.CTRL + Qt.Key_Right, self, self.interface.play_normal)
+        QShortcut(Qt.CTRL + Qt.Key_Left, self, self.interface.play_reverse)
+        QShortcut(Qt.Key_Up, self, self.interface.increase_speed)
+        QShortcut(Qt.Key_Down, self, self.interface.lower_speed)
+        QShortcut(Qt.CTRL + Qt.Key_F11, self, self.interface.renderer.toggle_frametime)
         QShortcut(QKeySequence.FullScreen, self, self.toggle_fullscreen)
-        QShortcut(QKeySequence(Qt.Key_F), self, self.toggle_fullscreen)
-        QShortcut(QKeySequence(Qt.ALT + Qt.Key_Return), self, \
-            self.toggle_fullscreen)
-        QShortcut(QKeySequence(Qt.Key_Escape), self, self.exit_fullscreen)
+        QShortcut(Qt.Key_F, self, self.toggle_fullscreen)
+        QShortcut(Qt.ALT + Qt.Key_Return, self, self.toggle_fullscreen)
+        QShortcut(Qt.Key_Escape, self, self.exit_fullscreen)
         QShortcut(QKeySequence.Paste, self, self.seek_to_paste_contents)
 
         # ugly hack to make the window 20% larger, we can't change gameplay
