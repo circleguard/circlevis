@@ -39,5 +39,7 @@ setup(
         "slider >= 0.4.0",
         "PyQt5"
     ],
-    package_data={"circlevis": ["resources/*"]}
+    package_data={
+        "circlevis": ["resources/*"]
+    }
 )
