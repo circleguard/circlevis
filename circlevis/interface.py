@@ -114,6 +114,10 @@ class Interface(QWidget):
     def update_slider(self, value):
         self.controls.time_slider.setValue(value)
 
+    def change_by(self, delta):
+        self.force_pause()
+        self.renderer.seek_to(self.renderer.clock.time_counter + delta)
+
     def play_reverse(self):
         self.force_unpause()
         self.renderer.play_direction = -1

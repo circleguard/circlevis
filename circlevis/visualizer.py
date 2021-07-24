@@ -46,6 +46,8 @@ class Visualizer(QMainWindow):
         QShortcut(Qt.ALT + Qt.Key_Return, self, self.toggle_fullscreen)
         QShortcut(Qt.Key_Escape, self, self.exit_fullscreen)
         QShortcut(QKeySequence.Paste, self, self.seek_to_paste_contents)
+        QShortcut(Qt.Key_Period, self, lambda: self.interface.change_by(1))
+        QShortcut(Qt.Key_Comma, self, lambda: self.interface.change_by(-1))
 
         # ugly hack to make the window 20% larger, we can't change gameplay
         # height because that's baked in as the osu! gameplay height and is
