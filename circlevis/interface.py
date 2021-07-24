@@ -33,11 +33,19 @@ class Interface(QWidget):
         for replay in replays:
             self.replay_statistics_precalculated[replay] = (None, None, None, None)
 
-        # and here's the thread which will actually start those calculations
-        cg_statistics_worked = Thread(target=self.calculate_cg_statistics)
-        # allow users to quit before we're done calculating
-        cg_statistics_worked.daemon = True
-        cg_statistics_worked.start()
+        # only precalculate statistics if we're visualizing 5 or fewer replays.
+        # Otherwise, the thread is too overworked and lags the main draw thread
+        # significantly until all statistics are precalculated.
+        # TODO This may be resolved properly by using a QThread with a low
+        # priority instead, so as not to starve the draw thread. We should be
+        # using QThreads instead of python threads regardless.
+
+        if len(replays) <= 5:
+            # and here's the thread which will actually start those calculations
+            cg_statistics_worked = Thread(target=self.calculate_cg_statistics)
+            # allow users to quit before we're done calculating
+            cg_statistics_worked.daemon = True
+            cg_statistics_worked.start()
 
         # create our own library in a temp dir if one wasn't passed
         if not self.library:
