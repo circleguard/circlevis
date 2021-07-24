@@ -99,6 +99,10 @@ class Visualizer(QMainWindow):
     def save_as_image(self):
         return self.grab().toImage()
 
+    # TODO remove in circlevis 2.0.0
+    force_pause = pause
+    force_unpause = unpause
+
 class VisualizerApp(QApplication):
     """
     ``speeds`` must contain ``start_speed``, ``1``, ``0.75``, and ``1.5``.
@@ -175,3 +179,7 @@ class VisualizerApp(QApplication):
 
     def save_as_image(self):
         return self.visualizer.grab().toImage()
+
+    # TODO remove in circlevis 2.0.0
+    force_pause = pause
+    force_unpause = unpause
