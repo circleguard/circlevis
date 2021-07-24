@@ -33,7 +33,7 @@ class Visualizer(QMainWindow):
             speeds, start_speed, paint_info, statistic_functions, snaps_args)
         self.setCentralWidget(self.interface)
 
-        QShortcut(Qt.Key_Space, self, self.interface.pause)
+        QShortcut(Qt.Key_Space, self, self.interface.toggle_pause)
         QShortcut(Qt.Key_Right, self, lambda: self.interface.change_frame(reverse=False))
         QShortcut(Qt.Key_Left, self, lambda: self.interface.change_frame(reverse=True))
         QShortcut(Qt.CTRL + Qt.Key_Right, self, self.interface.play_normal)
@@ -87,14 +87,14 @@ class Visualizer(QMainWindow):
     def seek_to(self, timestamp):
         self.interface.renderer.seek_to(timestamp)
 
+    def toggle_pause(self):
+        self.interface.toggle_pause()
+
     def pause(self):
         self.interface.pause()
 
-    def force_pause(self):
-        self.interface.force_pause()
-
-    def force_unpause(self):
-        self.interface.force_unpause()
+    def unpause(self):
+        self.interface.unpause()
 
     def save_as_image(self):
         return self.grab().toImage()
@@ -161,17 +161,17 @@ class VisualizerApp(QApplication):
 
         self.setPalette(dark_p)
 
-    def pause(self):
-        self.visualizer.pause()
+    def toggle_pause(self):
+        self.visualizer.toggle_pause()
 
     def seek_to(self, timestamp):
         self.visualizer.seek_to(timestamp)
 
-    def force_pause(self):
-        self.visualizer.force_pause()
+    def pause(self):
+        self.visualizer.pause()
 
-    def force_unpause(self):
-        self.visualizer.force_unpause()
+    def unpause(self):
+        self.visualizer.unpause()
 
     def save_as_image(self):
         return self.visualizer.grab().toImage()

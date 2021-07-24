@@ -66,7 +66,7 @@ class Interface(QWidget):
         # if the renderer wants to pause itself (eg when the playback hits the
         # end of the replay), we kick it back to us (the `Interface`) so we can
         # also update the pause button's state.
-        self.renderer.pause_signal.connect(self.pause)
+        self.renderer.pause_signal.connect(self.toggle_pause)
 
         # we want to give `VisualizerControls` the union of all the replay's
         # mods
@@ -75,7 +75,7 @@ class Interface(QWidget):
             mods += replay.mods
 
         self.controls = VisualizerControls(start_speed, mods, replays)
-        self.controls.pause_button.clicked.connect(self.pause)
+        self.controls.pause_button.clicked.connect(self.toggle_pause)
         self.controls.play_reverse_button.clicked.connect(self.play_reverse)
         self.controls.play_normal_button.clicked.connect(self.play_normal)
         self.controls.next_frame_button.clicked.connect(lambda: self.change_frame(reverse=False))
@@ -107,7 +107,7 @@ class Interface(QWidget):
         self.setLayout(layout)
 
     def play_normal(self):
-        self.force_unpause()
+        self.unpause()
         self.renderer.play_direction = 1
         self.update_speed(abs(self.renderer.clock.current_speed))
 
@@ -115,11 +115,11 @@ class Interface(QWidget):
         self.controls.time_slider.setValue(value)
 
     def change_by(self, delta):
-        self.force_pause()
+        self.pause()
         self.renderer.seek_to(self.renderer.clock.time_counter + delta)
 
     def play_reverse(self):
-        self.force_unpause()
+        self.unpause()
         self.renderer.play_direction = -1
         self.update_speed(abs(self.renderer.clock.current_speed))
 
@@ -127,22 +127,20 @@ class Interface(QWidget):
         self.renderer.clock.change_speed(speed * self.renderer.play_direction)
 
     def change_frame(self, reverse):
-        self.force_pause()
+        self.pause()
         self.renderer.search_nearest_frame(reverse=reverse)
 
-    def pause(self):
+    def toggle_pause(self):
         if self.renderer.paused:
-            self.controls.set_paused_state(False)
-            self.renderer.resume()
+            self.unpause()
         else:
-            self.controls.set_paused_state(True)
-            self.renderer.pause()
+            self.pause()
 
-    def force_pause(self):
+    def pause(self):
         self.controls.set_paused_state(True)
         self.renderer.pause()
 
-    def force_unpause(self):
+    def unpause(self):
         self.controls.set_paused_state(False)
         self.renderer.resume()
 
@@ -210,7 +208,7 @@ class Interface(QWidget):
         self.replay_info_cache[replay] = replay_info
 
     def seek_to(self, time):
-        self.force_pause()
+        self.pause()
         self.renderer.seek_to(time)
 
     def calculate_cg_statistics(self):
