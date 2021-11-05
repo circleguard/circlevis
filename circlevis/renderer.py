@@ -85,6 +85,7 @@ SLIDER_TICKRATE = 50
 class Renderer(QFrame):
     update_time_signal = pyqtSignal(int)
     pause_signal = pyqtSignal()
+    loaded_signal = pyqtSignal()
 
     def __init__(self, beatmap, replays, events, start_speed, paint_info, \
         statistic_functions):
@@ -306,6 +307,10 @@ class Renderer(QFrame):
                 self.seek_to(self.seek_to_when_loaded)
                 self.previously_loading = False
             return
+        if not self.is_loading and self.previously_loading:
+            self.loaded_signal.emit()
+            self.previously_loading = False
+
         self.next_frame()
 
     def next_frame(self, stepping_backwards=False):
