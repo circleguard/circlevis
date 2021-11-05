@@ -125,3 +125,30 @@ replays = cg.Map(221777, "1-10")
 classifier = JudgeClassifier(replays, cg)
 classifier.start()
 ```
+
+### Programmatically Taking Screenshots
+
+A cookbook recipe to save the current state of the visualizer at arbitrary timestamps in the map:
+
+```python
+from circleguard import *
+from circlevis import *
+
+cg = Circleguard("api_key")
+
+r = cg.Map(2102290, "1", mods=Mod.HD, load=True)[0]
+bm = BeatmapInfo(map_id=r.map_id)
+screenshot_times = [727, 8000, 15214]
+
+class ScreenshotVisualizer(VisualizerApp):
+    def on_load(self):
+        self.pause()
+        for i, t in enumerate(screenshot_times):
+            self.seek_to(t)
+            image = self.save_as_image()
+            image.save(f"image-{i}.png")
+        self.exit()
+
+vis = ScreenshotVisualizer(bm, [r])
+vis.exec()
+```
