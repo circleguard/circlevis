@@ -57,7 +57,7 @@ class Visualizer(QMainWindow):
         # not meant to be changed to increase the window size (same with width).
         from .renderer import (GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT,
             GAMEPLAY_PADDING_WIDTH, GAMEPLAY_PADDING_HEIGHT)
-        self.resize((GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH * 2) * 1.2, \
+        self.resize((GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH * 2) * 1.2,
                     (GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT * 2) * 1.2)
 
     def closeEvent(self, event):
@@ -136,8 +136,8 @@ class VisualizerApp(QApplication):
         # we can't create this in ``__init__`` because we can't instantiate a
         # ``QWidget`` before a ``QApplication``, so delay until here, which is
         # all it's necessary for.
-        self.visualizer = Visualizer(self.beatmap_info, self.replays, \
-            self.events, self.library, self.speeds, self.start_speed, \
+        self.visualizer = Visualizer(self.beatmap_info, self.replays,
+            self.events, self.library, self.speeds, self.start_speed,
             self.paint_info, self.statistic_functions, self.snaps_args)
         self.visualizer.show()
         super().exec()
