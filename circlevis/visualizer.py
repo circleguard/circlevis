@@ -12,9 +12,9 @@ class Visualizer(QMainWindow):
     # than a few optional arguments, but multiple different objects with fewer
     # (and more relevant) arguments each. Eg maybe expose Renderer, which would
     # take speeds and start_speed.
-    def __init__(self, beatmap_info, replays=[], events=[], library=None, \
-        speeds=[0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0], start_speed=1,\
-        paint_info=True, statistic_functions=[], snaps_args={}):
+    def __init__(self, beatmap_info, replays=[], events=[], library=None,
+        speeds=[0.05, 0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0],
+        start_speed=1, paint_info=True, statistic_functions=[], snaps_args={}):
         super().__init__()
 
         self.beatmap_info = beatmap_info
@@ -29,18 +29,21 @@ class Visualizer(QMainWindow):
 
         self.setAutoFillBackground(True)
         self.setWindowTitle("Visualizer")
-        self.interface = Interface(beatmap_info, replays, events, library, \
+        self.interface = Interface(beatmap_info, replays, events, library,
             speeds, start_speed, paint_info, statistic_functions, snaps_args)
         self.setCentralWidget(self.interface)
 
         QShortcut(Qt.Key_Space, self, self.interface.toggle_pause)
-        QShortcut(Qt.Key_Right, self, lambda: self.interface.change_frame(reverse=False))
-        QShortcut(Qt.Key_Left, self, lambda: self.interface.change_frame(reverse=True))
+        QShortcut(Qt.Key_Right, self,
+            lambda: self.interface.change_frame(reverse=False))
+        QShortcut(Qt.Key_Left, self,
+            lambda: self.interface.change_frame(reverse=True))
         QShortcut(Qt.CTRL + Qt.Key_Right, self, self.interface.play_normal)
         QShortcut(Qt.CTRL + Qt.Key_Left, self, self.interface.play_reverse)
         QShortcut(Qt.Key_Up, self, self.interface.increase_speed)
         QShortcut(Qt.Key_Down, self, self.interface.lower_speed)
-        QShortcut(Qt.CTRL + Qt.Key_F11, self, self.interface.renderer.toggle_frametime)
+        QShortcut(Qt.CTRL + Qt.Key_F11, self,
+             self.interface.renderer.toggle_frametime)
         QShortcut(QKeySequence.FullScreen, self, self.toggle_fullscreen)
         QShortcut(Qt.Key_F, self, self.toggle_fullscreen)
         QShortcut(Qt.ALT + Qt.Key_Return, self, self.toggle_fullscreen)
@@ -107,9 +110,9 @@ class VisualizerApp(QApplication):
     """
     ``speeds`` must contain ``start_speed``, ``1``, ``0.75``, and ``1.5``.
     """
-    def __init__(self, beatmap_info, replays=[], events=[], library=None, \
-        speeds=[0.05, 0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0], start_speed=1,\
-        paint_info=True, statistic_functions=[], snaps_args={}):
+    def __init__(self, beatmap_info, replays=[], events=[], library=None,
+        speeds=[0.05, 0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0],
+        start_speed=1, paint_info=True, statistic_functions=[], snaps_args={}):
         super().__init__([])
         self.setStyle("Fusion")
         self.setApplicationName("Circlevis")
