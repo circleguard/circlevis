@@ -152,3 +152,37 @@ class ScreenshotVisualizer(VisualizerApp):
 vis = ScreenshotVisualizer(bm, [r])
 vis.exec()
 ```
+
+If you want to take screenshots of multiple replays over multiple maps, it gets a bit trickier because we can only instantiate one `QApplication` over the lifetime of the program, even if we try to instantiate them in sequence. But we can slightly abuse `Classifier to still achieve this:
+
+```python
+m = cg.Map(221777, "1-2", load=True)
+# fill in with whatever screenshot times you want
+screenshot_times = {
+    m[0]: [123, 234, 456],
+    m[1]: [10000, 20000, 30000]
+}
+
+class ScreenshotVisualizer(Visualizer):
+    def __init__(self, callback, screenshot_times, *args, **kwargs):
+        self.callback = callback
+        self.screenshot_times = screenshot_times
+        super().__init__(*args, **kwargs)
+
+    def on_load(self):
+        self.pause()
+        for t in self.screenshot_times:
+            self.seek_to(t)
+            image = self.save_as_image()
+            image.save(f"replay-{self.replays[0].username}-{t}.png")
+        self.callback()
+
+class ScreenshotClassifier(Classifier):
+    def visualizer(self, bm, replay):
+        callback = lambda: self.next_replay()
+        times = screenshot_times[replay]
+        return ScreenshotVisualizer(callback, times, bm, [replay])
+
+c = ScreenshotClassifier(m, cg, [])
+c.start()
+```
