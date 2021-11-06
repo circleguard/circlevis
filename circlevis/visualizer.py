@@ -31,6 +31,7 @@ class Visualizer(QMainWindow):
         self.setWindowTitle("Visualizer")
         self.interface = Interface(beatmap_info, replays, events, library,
             speeds, start_speed, paint_info, statistic_functions, snaps_args)
+        self.interface.renderer.loaded_signal.connect(self.on_load)
         self.setCentralWidget(self.interface)
 
         QShortcut(Qt.Key_Space, self, self.interface.toggle_pause)
@@ -102,6 +103,14 @@ class Visualizer(QMainWindow):
     def save_as_image(self):
         return self.grab().toImage()
 
+    def on_load(self):
+        """
+        Will be called when the visualizer has completely loaded (including
+        processing the beatmap, replays, sliders, and anything else) and is
+        ready to display gameplay.
+        """
+        pass
+
     # TODO remove in circlevis 2.0.0
     force_pause = pause
     force_unpause = unpause
@@ -139,7 +148,7 @@ class VisualizerApp(QApplication):
         self.visualizer = Visualizer(self.beatmap_info, self.replays,
             self.events, self.library, self.speeds, self.start_speed,
             self.paint_info, self.statistic_functions, self.snaps_args)
-        self.visualizer.interface.renderer.loaded_signal.connect(self.on_load)
+        self.interface.renderer.loaded_signal.connect(self.on_load)
         self.visualizer.show()
         super().exec()
 
