@@ -70,11 +70,19 @@ class Classifier:
         if self.should_skip(replay, bm):
             return self.next_replay()
 
-        self.vis = Visualizer(bm, [replay])
+        self.vis = self.visualizer(bm, replay)
         for hotkey in self.hotkeys:
             QShortcut(QKeySequence(hotkey.keys), self.vis,
                 partial(hotkey.callback, replay))
         self.vis.show()
+
+    def visualizer(self, bm, replay):
+        """
+        Return the desired ``Visualizer`` to show. Provided as a hook for
+        subclasses, primarily in case subclasses want to return a subclass of
+        ``Visualizer``.
+        """
+        return Visualizer(bm, [replay])
 
     def load(self, replay):
         """
