@@ -148,7 +148,7 @@ class VisualizerApp(QApplication):
         self.visualizer = Visualizer(self.beatmap_info, self.replays,
             self.events, self.library, self.speeds, self.start_speed,
             self.paint_info, self.statistic_functions, self.snaps_args)
-        self.interface.renderer.loaded_signal.connect(self.on_load)
+        self.visualizer.interface.renderer.loaded_signal.connect(self.on_load)
         self.visualizer.show()
         super().exec()
 
