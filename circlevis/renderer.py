@@ -1006,6 +1006,16 @@ class Renderer(QFrame):
             self.sliders_current = i
             if isinstance(hitobj, Slider):
                 steps = max(2, int((self.get_hit_endtime(hitobj) - self.get_hit_time(hitobj)) / SLIDER_TICKRATE))
+                # some sliders (see https://osu.ppy.sh/b/1853289 and
+                # https://github.com/circleguard/circleguard/issues/177) set
+                # slider durations of ridiculously long time periods, so
+                # get_hit_endtime returns a time a hundred million milliseconds
+                # in the future, causing our ``steps`` to be in the millions and
+                # essentially never finish calculating. To prevent this, cap the
+                # resolution of sliders to something really high, like 100.
+                # I checked a crazy slider map like notch hell and the highest
+                # ``steps`` went was 61, so 100 seems like a reasonable limit.
+                steps = min(steps, 100)
                 hitobj.slider_body = [hitobj.curve(i / steps) for i in range(steps + 1)]
 
     def search_nearest_frame(self, reverse=False):
