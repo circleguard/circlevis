@@ -153,7 +153,7 @@ vis = ScreenshotVisualizer(bm, [r])
 vis.exec()
 ```
 
-If you want to take screenshots of multiple replays over multiple maps, it gets a bit trickier because we can only instantiate one `QApplication` over the lifetime of the program, even if we try to instantiate them in sequence. But we can slightly abuse `Classifier to still achieve this:
+If you want to take screenshots of multiple replays over multiple maps, it gets a bit trickier because we can only instantiate one `QApplication` over the lifetime of the program, even if we try to instantiate them in sequence. But we can still slightly abuse `Classifier` to achieve this:
 
 ```python
 m = cg.Map(221777, "1-2", load=True)
