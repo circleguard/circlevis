@@ -351,6 +351,10 @@ class Renderer(QFrame):
             if player.end_pos >= self.num_frames_on_screen:
                 player.start_pos = player.end_pos - self.num_frames_on_screen
 
+            # never go out of bounds
+            if player.end_pos >= len(player.xy):
+                player.end_pos = len(player.xy) - 1
+
         if self.has_beatmap:
             self.get_hitobjects()
         self.update_time_signal.emit(current_time)
@@ -447,8 +451,13 @@ class Renderer(QFrame):
         self.painter.setPen(pen)
         highlighted_pen = False
         for i in range(player.start_pos, player.end_pos):
-            highlight = any((player.t[i + 1] in self.events, player.t[i] in
-                self.events))
+            # don't draw a cursor at the very last frame, this is already taken
+            # care of by the `i - 1` iteration, since we do `i + 1` inside this
+            # loop
+            if i == len(player.xy) - 1:
+                continue
+            highlight = (player.t[i] in self.events or player.t[i + 1] in
+                self.events)
             if highlight and not highlighted_pen:
                 self.painter.setPen(PEN_HIGHLIGHT)
                 highlighted_pen = True
@@ -470,7 +479,7 @@ class Renderer(QFrame):
                     player.xy[i + 1], grey_out=grey_out)
         pen.setWidth(self.scaled_number(WIDTH_CROSS))
         self.painter.setPen(pen)
-        for i in range(player.start_pos, player.end_pos+1):
+        for i in range(player.start_pos, player.end_pos):
             alpha = (i - player.start_pos) * alpha_step
             xy = player.xy[i]
             k = player.k[i]
