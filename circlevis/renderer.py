@@ -460,7 +460,11 @@ class Renderer(QFrame):
                     player.xy[i + 1], grey_out=grey_out)
         pen.setWidth(self.scaled_number(WIDTH_CROSS))
         self.painter.setPen(pen)
-        for i in range(player.start_pos, player.end_pos):
+        for i in range(player.start_pos, player.end_pos + 1):
+            # avoid out of bounds error on the last frame, might be unecessary
+            # but would prefer caution
+            if i >= len(player.xy):
+                continue
             alpha = (i - player.start_pos) * alpha_step
             xy = player.xy[i]
             k = player.k[i]
