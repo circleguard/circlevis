@@ -606,16 +606,20 @@ class Renderer(QFrame):
                 self.painter.setPen(PEN_BLANK)
                 self.painter.setBrush(QBrush(pen.color()))
                 keys = Key(int(player.k[player.end_pos]))
-                _set_opacity(1 if Key.M1 in keys else 0.3)
+                _set_opacity(1 if Key.M1 in keys and Key.K1 not in keys else 0.3)
                 self.painter.drawRect(5, y - 9, 10, 10)
-                _set_opacity(1 if Key.M2 in keys else 0.3)
+                _set_opacity(1 if Key.M2 in keys and Key.K2 not in keys else 0.3)
                 self.painter.drawRect(18, y - 9, 10, 10)
+                _set_opacity(1 if Key.K1 | Key.M1 in keys else 0.3)
+                self.painter.drawRect(31, y - 9, 10, 10)
+                _set_opacity(1 if Key.K2 | Key.M2 in keys else 0.3)
+                self.painter.drawRect(44, y - 9, 10, 10)
                 _set_opacity(1)
                 self.painter.setPen(pen)
                 info_text = (f"{player.username} {player.mods.short_name()}: "
                     f"{player.xy[player.end_pos][0]:.2f}, "
                     f"{player.xy[player.end_pos][1]:.2f}")
-                self.painter.drawText(31, y, info_text)
+                self.painter.drawText(57, y, info_text)
                 # not sure why we need to do ``y - 9`` instead of 9 here,
                 # our ``drawText`` call is perfectly happy to accept ``y`` but
                 # we need to pass ``y - 9`` to our ``drawRect`` calls...maybe 9
@@ -629,9 +633,9 @@ class Renderer(QFrame):
                 # adjustment; would like to figure out why but this works for
                 # now.
                 info_pos.height -= 3
-                # our bounding rect starts at 5 but the text starts at 31, so
+                # our bounding rect starts at 5 but the text starts at 57, so
                 # we need to increase the width by the difference to account
-                info_pos.width += 31 - 5
+                info_pos.width += 57 - 5
                 self.player_info_positions[info_pos] = player
 
             self.painter.setOpacity(1)
