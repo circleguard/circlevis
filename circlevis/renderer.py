@@ -137,27 +137,8 @@ class Renderer(QFrame):
                 easy=self.use_ez)
             self.playback_end = self.get_hit_endtime(self.hit_objects[-1])
 
-            ar = beatmap.ar(hard_rock=self.use_hr, easy=self.use_ez)
-            od = beatmap.od(hard_rock=self.use_hr, easy=self.use_ez)
-            cs = beatmap.cs(hard_rock=self.use_hr, easy=self.use_ez)
-            # see https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate
-            if ar <= 5:
-                self.preempt = 1200 + 600 * (5 - ar) / 5
-                self.fade_in = 800 + 400 * (5 - ar) / 5
-            else:
-                self.preempt = 1200 - 750 * (ar - 5) / 5
-                self.fade_in = 800 - 500 * (ar - 5) / 5
+            self.calculate_beatmap_stats(self.use_hr, self.use_ez)
 
-            (hitwindow_50, hitwindow_100, hitwindow_300) = hitwindows(od)
-            self.hitwindow_50 = hitwindow_50
-            self.hitwindow_100 = hitwindow_100
-            self.hitwindow_300 = hitwindow_300
-
-            # how much to scale our error bar by from its 'standard' size, where
-            # each ms of error is a pixel.
-            self.error_bar_width_factor = ERROR_BAR_WIDTH / (hitwindow_50 * 2)
-
-            self.hitcircle_radius = hitradius(cs)
             # loading stuff
             self.is_loading = True
             self.num_hitobjects = len(self.hit_objects)
@@ -1167,6 +1148,31 @@ class Renderer(QFrame):
         r = self.hitcircle_radius
         return math.sqrt((((x2 - x1) ** 2) + (y2 - y1) ** 2)) - r
 
+    def calculate_beatmap_stats(self, use_hr, use_ez):
+        ar = self.beatmap.ar(hard_rock=use_hr, easy=use_ez)
+        od = self.beatmap.od(hard_rock=use_hr, easy=use_ez)
+        cs = self.beatmap.cs(hard_rock=use_hr, easy=use_ez)
+
+        # see https://osu.ppy.sh/help/wiki/Beatmapping/Approach_rate
+        if ar <= 5:
+            self.preempt = 1200 + 600 * (5 - ar) / 5
+            self.fade_in = 800 + 400 * (5 - ar) / 5
+        else:
+            self.preempt = 1200 - 750 * (ar - 5) / 5
+            self.fade_in = 800 - 500 * (ar - 5) / 5
+
+        (hitwindow_50, hitwindow_100, hitwindow_300) = hitwindows(od)
+        self.hitwindow_50 = hitwindow_50
+        self.hitwindow_100 = hitwindow_100
+        self.hitwindow_300 = hitwindow_300
+
+        # how much to scale our error bar by from its 'standard' size, where
+        # each ms of error is a pixel.
+        self.error_bar_width_factor = ERROR_BAR_WIDTH / (hitwindow_50 * 2)
+
+        self.hitcircle_radius = hitradius(cs)
+
+
     def raw_view_changed(self, new_state):
         self.raw_view = new_state
         # redraw everything for the new raw view
@@ -1199,8 +1205,7 @@ class Renderer(QFrame):
             return
         use_hr = new_value == "HR"
         use_ez = new_value == "EZ"
-        cs = self.beatmap.cs(hard_rock=use_hr, easy=use_ez)
-        self.hitcircle_radius = hitradius(cs)
+        self.calculate_beatmap_stats(use_hr, use_ez)
         self.update()
 
 

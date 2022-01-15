@@ -185,7 +185,7 @@ class SettingsPopup(QFrame):
         self.approach_circles_cb.state_changed.connect(self.approach_circles_changed)
 
         start_circle_size = "EZ" if Mod.EZ in mods else "HR" if Mod.HR in mods else "NM"
-        self.circle_size_mod_cmb = ComboBoxSetting("Adjust circle size:", start_circle_size, ["EZ", "NM", "HR"])
+        self.circle_size_mod_cmb = ComboBoxSetting("Adjust mods:", start_circle_size, ["EZ", "NM", "HR"])
         self.circle_size_mod_cmb.value_changed.connect(self.circle_size_mod_changed)
 
         self.num_frames_slider = SliderSetting("Num. frames:", 15, 1, 30)
