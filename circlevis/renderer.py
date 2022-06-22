@@ -194,7 +194,7 @@ class Renderer(QFrame):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.next_frame_from_timer)
         # 62 fps (1000ms / 60frames but the result can only be a integer)
-        self.timer.start(1000/60)
+        self.timer.start(int(1000/60))
 
         # black background
         pal = QPalette()
