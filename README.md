@@ -2,7 +2,7 @@
 
 Circlevis is the replay viewer (aka visualizer) in [Circleguard](https://github.com/circleguard/circleguard). It was split off into its own repository to allow other projects to use it, should they so choose.
 
-Circlevis is a [pyqt](https://pypi.org/project/PyQt5/) widget.
+Circlevis is a [pyqt](https://pypi.org/project/PyQt6/) widget.
 
 ## Installation
 
@@ -99,16 +99,16 @@ class JudgeClassifier(Classifier):
         self.scores = defaultdict(list)
 
         hotkeys = [
-            ClassifierHotkey(Qt.Key_1, lambda r: self.assign_score(1, r)),
-            ClassifierHotkey(Qt.Key_2, lambda r: self.assign_score(2, r)),
-            ClassifierHotkey(Qt.Key_3, lambda r: self.assign_score(3, r)),
-            ClassifierHotkey(Qt.Key_4, lambda r: self.assign_score(4, r)),
-            ClassifierHotkey(Qt.Key_5, lambda r: self.assign_score(5, r)),
-            ClassifierHotkey(Qt.Key_6, lambda r: self.assign_score(6, r)),
-            ClassifierHotkey(Qt.Key_7, lambda r: self.assign_score(7, r)),
-            ClassifierHotkey(Qt.Key_8, lambda r: self.assign_score(8, r)),
-            ClassifierHotkey(Qt.Key_9, lambda r: self.assign_score(9, r)),
-            ClassifierHotkey(Qt.Key_0, lambda r: self.assign_score(10, r)),
+            ClassifierHotkey(Qt.Key.Key_1, lambda r: self.assign_score(1, r)),
+            ClassifierHotkey(Qt.Key.Key_2, lambda r: self.assign_score(2, r)),
+            ClassifierHotkey(Qt.Key.Key_3, lambda r: self.assign_score(3, r)),
+            ClassifierHotkey(Qt.Key.Key_4, lambda r: self.assign_score(4, r)),
+            ClassifierHotkey(Qt.Key.Key_5, lambda r: self.assign_score(5, r)),
+            ClassifierHotkey(Qt.Key.Key_6, lambda r: self.assign_score(6, r)),
+            ClassifierHotkey(Qt.Key.Key_7, lambda r: self.assign_score(7, r)),
+            ClassifierHotkey(Qt.Key.Key_8, lambda r: self.assign_score(8, r)),
+            ClassifierHotkey(Qt.Key.Key_9, lambda r: self.assign_score(9, r)),
+            ClassifierHotkey(Qt.Key.Key_0, lambda r: self.assign_score(10, r)),
         ]
         super().__init__(replays, cg, hotkeys)
 

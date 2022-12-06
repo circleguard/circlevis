@@ -1,9 +1,9 @@
 from tempfile import TemporaryDirectory
 from threading import Thread
 
-from PyQt5.QtWidgets import (QGridLayout, QWidget, QApplication, QSplitter,
+from PyQt6.QtWidgets import (QGridLayout, QWidget, QApplication, QSplitter,
     QFrame)
-from PyQt5.QtCore import Qt
+from PyQt6.QtCore import Qt
 from circleguard import Mod, KeylessCircleguard
 from slider import Library, Beatmap
 
@@ -107,7 +107,7 @@ class Interface(QWidget):
         self.splitter = QSplitter()
         # splitter lays widgets horizontally by default, so combine renderer and
         # controls into one single widget vertically
-        self.splitter.addWidget(Combined([self.renderer, self.controls], Qt.Vertical))
+        self.splitter.addWidget(Combined([self.renderer, self.controls], Qt.Orientation.Vertical))
 
         layout = QGridLayout()
         layout.addWidget(self.splitter, 1, 0, 1, 1)
@@ -238,18 +238,18 @@ class Combined(QFrame):
     def __init__(self, widgets, direction):
         """
         combines all the widgets in `widgets` according to `direction`, which is
-        one of `Qt.Horizontal` or `Qt.Vertical`
+        one of `Qt.Orientation.Horizontal` or `Qt.Orientation.Vertical`
         """
         super().__init__()
         layout = QGridLayout()
         layout.setContentsMargins(0, 0, 0, 0)
 
-        if direction not in [Qt.Horizontal, Qt.Vertical]:
-            raise ValueError("`direction` must be one of [Qt.Horizontal, "
-                "Qt.Vertical]")
+        if direction not in [Qt.Orientation.Horizontal, Qt.Orientation.Vertical]:
+            raise ValueError("`direction` must be one of [Qt.Orientation.Horizontal, "
+                "Qt.Orientation.Vertical]")
 
         for i, widget in enumerate(widgets):
-            if direction == Qt.Horizontal:
+            if direction == Qt.Orientation.Horizontal:
                 layout.addWidget(widget, 0, i, 1, 1)
             else:
                 layout.addWidget(widget, i, 0, 1, 1)

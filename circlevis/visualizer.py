@@ -1,9 +1,10 @@
 import numpy as np
-from PyQt5.QtGui import QKeySequence, QPalette, QColor
-from PyQt5.QtWidgets import QShortcut, QMainWindow, QApplication
-from PyQt5.QtCore import Qt
+from PyQt6.QtGui import QKeySequence, QShortcut
+from PyQt6.QtWidgets import QMainWindow, QApplication
+from PyQt6.QtCore import Qt
 
 from circlevis.interface import Interface
+from circlevis.palette import dark_palette
 
 PREVIOUS_ERRSTATE = np.seterr('raise')
 
@@ -34,24 +35,29 @@ class Visualizer(QMainWindow):
         self.interface.renderer.loaded_signal.connect(self.on_load)
         self.setCentralWidget(self.interface)
 
-        QShortcut(Qt.Key_Space, self, self.interface.toggle_pause)
-        QShortcut(Qt.Key_Right, self,
+        QShortcut(Qt.Key.Key_Space, self, self.interface.toggle_pause)
+        QShortcut(Qt.Key.Key_Right, self,
             lambda: self.interface.change_frame(reverse=False))
-        QShortcut(Qt.Key_Left, self,
+        QShortcut(Qt.Key.Key_Left, self,
             lambda: self.interface.change_frame(reverse=True))
-        QShortcut(Qt.CTRL + Qt.Key_Right, self, self.interface.play_normal)
-        QShortcut(Qt.CTRL + Qt.Key_Left, self, self.interface.play_reverse)
-        QShortcut(Qt.Key_Up, self, self.interface.increase_speed)
-        QShortcut(Qt.Key_Down, self, self.interface.lower_speed)
-        QShortcut(Qt.CTRL + Qt.Key_F11, self,
+        QShortcut(Qt.Key.Key_Control + Qt.Key.Key_Right, self,
+            self.interface.play_normal)
+        QShortcut(Qt.Key.Key_Control + Qt.Key.Key_Left, self,
+            self.interface.play_reverse)
+        QShortcut(Qt.Key.Key_Up, self, self.interface.increase_speed)
+        QShortcut(Qt.Key.Key_Down, self, self.interface.lower_speed)
+        QShortcut(Qt.Key.Key_Control + Qt.Key.Key_F11, self,
              self.interface.renderer.toggle_frametime)
-        QShortcut(QKeySequence.FullScreen, self, self.toggle_fullscreen)
-        QShortcut(Qt.Key_F, self, self.toggle_fullscreen)
-        QShortcut(Qt.ALT + Qt.Key_Return, self, self.toggle_fullscreen)
-        QShortcut(Qt.Key_Escape, self, self.exit_fullscreen)
-        QShortcut(QKeySequence.Paste, self, self.seek_to_paste_contents)
-        QShortcut(Qt.Key_Period, self, lambda: self.interface.change_by(1))
-        QShortcut(Qt.Key_Comma, self, lambda: self.interface.change_by(-1))
+        QShortcut(QKeySequence.StandardKey.FullScreen, self,
+            self.toggle_fullscreen)
+        QShortcut(Qt.Key.Key_F, self, self.toggle_fullscreen)
+        QShortcut(Qt.Key.Key_Alt + Qt.Key.Key_Return, self,
+            self.toggle_fullscreen)
+        QShortcut(Qt.Key.Key_Escape, self, self.exit_fullscreen)
+        QShortcut(QKeySequence.StandardKey.Paste, self,
+            self.seek_to_paste_contents)
+        QShortcut(Qt.Key.Key_Period, self, lambda: self.interface.change_by(1))
+        QShortcut(Qt.Key.Key_Comma, self, lambda: self.interface.change_by(-1))
 
         # ugly hack to make the window 20% larger, we can't change gameplay
         # height because that's baked in as the osu! gameplay height and is
@@ -141,7 +147,7 @@ class VisualizerApp(QApplication):
         Displays the visualizer and enters into the event loop, which will block
         the calling thread.
         """
-        self.set_palette()
+        self.setPalette(dark_palette)
         # we can't create this in ``__init__`` because we can't instantiate a
         # ``QWidget`` before a ``QApplication``, so delay until here, which is
         # all it's necessary for.
@@ -151,32 +157,6 @@ class VisualizerApp(QApplication):
         self.visualizer.interface.renderer.loaded_signal.connect(self.on_load)
         self.visualizer.show()
         super().exec()
-
-    def set_palette(self):
-        accent = QColor(71, 174, 247)
-        dark_p = QPalette()
-
-        dark_p.setColor(QPalette.Window, QColor(53, 53, 53))
-        dark_p.setColor(QPalette.WindowText, Qt.white)
-        dark_p.setColor(QPalette.Base, QColor(25, 25, 25))
-        dark_p.setColor(QPalette.AlternateBase, QColor(53, 53, 53))
-        dark_p.setColor(QPalette.ToolTipBase, QColor(53, 53, 53))
-        dark_p.setColor(QPalette.ToolTipText, Qt.white)
-        dark_p.setColor(QPalette.Text, Qt.white)
-        dark_p.setColor(QPalette.Button, QColor(53, 53, 53))
-        dark_p.setColor(QPalette.ButtonText, Qt.white)
-        dark_p.setColor(QPalette.BrightText, Qt.red)
-        dark_p.setColor(QPalette.Highlight, accent)
-        dark_p.setColor(QPalette.Inactive, QPalette.Highlight, Qt.lightGray)
-        dark_p.setColor(QPalette.HighlightedText, Qt.black)
-        dark_p.setColor(QPalette.Disabled, QPalette.Text, Qt.darkGray)
-        dark_p.setColor(QPalette.Disabled, QPalette.ButtonText, Qt.darkGray)
-        dark_p.setColor(QPalette.Disabled, QPalette.Highlight, Qt.darkGray)
-        dark_p.setColor(QPalette.Disabled, QPalette.Base, QColor(53, 53, 53))
-        dark_p.setColor(QPalette.Link, accent)
-        dark_p.setColor(QPalette.LinkVisited, accent)
-
-        self.setPalette(dark_p)
 
     def toggle_pause(self):
         self.visualizer.toggle_pause()

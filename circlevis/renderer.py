@@ -5,10 +5,10 @@ from dataclasses import dataclass
 
 import numpy as np
 from scipy import interpolate
-from PyQt5.QtGui import (QBrush, QPen, QColor, QPalette, QPainter, QPainterPath,
+from PyQt6.QtGui import (QBrush, QPen, QColor, QPalette, QPainter, QPainterPath,
     QCursor)
-from PyQt5.QtWidgets import QFrame
-from PyQt5.QtCore import Qt, pyqtSignal, QTimer, QPointF, QRectF, QRect
+from PyQt6.QtWidgets import QFrame
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QPointF, QRectF, QRect
 from slider.beatmap import Circle, Slider, Spinner
 from circleguard import (Mod, Key, hitradius, hitwindows, JudgmentType,
     KeylessCircleguard)
@@ -198,7 +198,11 @@ class Renderer(QFrame):
 
         # black background
         pal = QPalette()
-        pal.setColor(QPalette.Background, Qt.black)
+        pal.setColor(QPalette.ColorGroup.Normal,
+            QPalette.ColorRole.Window, Qt.GlobalColor.black)
+        # also set when app is in background
+        pal.setColor(QPalette.ColorGroup.Inactive,
+            QPalette.ColorRole.Window, Qt.GlobalColor.black)
         self.setAutoFillBackground(True)
         self.setPalette(pal)
 
@@ -265,7 +269,7 @@ class Renderer(QFrame):
         return QPointF(self._x(x), self._y(y))
 
     def scaled_number(self, n):
-        return n * self.scale
+        return int(n * self.scale)
 
     def next_frame_from_timer(self):
         """
@@ -307,7 +311,6 @@ class Renderer(QFrame):
             self.previously_loading = True
             self.update()
             return
-
         current_time = self.clock.get_time()
         # if we're at the end of the track or are at the beginning of the track
         # (and thus are reversing), pause and dont update
@@ -338,7 +341,7 @@ class Renderer(QFrame):
 
         if self.has_beatmap:
             self.get_hitobjects()
-        self.update_time_signal.emit(current_time)
+        self.update_time_signal.emit(int(current_time))
         self.update()
 
     def get_hitobjects(self):
@@ -377,8 +380,8 @@ class Renderer(QFrame):
         Called whenever self.update() is called
         """
         self.painter.begin(self)
-        self.painter.setRenderHint(QPainter.TextAntialiasing, True)
-        self.painter.setRenderHint(QPainter.Antialiasing, True)
+        self.painter.setRenderHint(QPainter.RenderHint.TextAntialiasing, True)
+        self.painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         self.painter.setPen(PEN_WHITE)
         _pen = self.painter.pen()
         # loading screen
@@ -843,8 +846,8 @@ class Renderer(QFrame):
         p = hitobj.position
 
         PEN_GRAY.setWidth(self.scaled_number(self.hitcircle_radius * 2))
-        PEN_GRAY.setCapStyle(Qt.RoundCap)
-        PEN_GRAY.setJoinStyle(Qt.RoundJoin)
+        PEN_GRAY.setCapStyle(Qt.PenCapStyle.RoundCap)
+        PEN_GRAY.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
         self.painter.setPen(PEN_GRAY)
         self.painter.setOpacity(opacity)
 
@@ -975,8 +978,8 @@ class Renderer(QFrame):
 
         _pen = self.painter.pen()
         _pen.setWidth(5)
-        _pen.setCapStyle(Qt.RoundCap)
-        _pen.setJoinStyle(Qt.RoundJoin)
+        _pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        _pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
         _pen.setColor(QColor(c.red(), c.green(), c.blue(), 25))
         self.painter.setPen(_pen)
 
@@ -995,7 +998,7 @@ class Renderer(QFrame):
     def draw_loading_screen(self):
         x = self.width() / 2 - 75
         y = self.height() / 2 - 10
-        self.painter.drawText(x, y, "Calculating Sliders, please wait...")
+        self.painter.drawText(int(x), int(y), "Calculating Sliders, please wait...")
         progress = int((self.sliders_current / self.num_sliders) * 100)
         self.draw_progressbar(progress)
 
@@ -1091,16 +1094,15 @@ class Renderer(QFrame):
             qrect = rect.toQRect()
             if qrect.contains(event.pos()):
                 any_inside = True
-                self.setCursor(QCursor(Qt.PointingHandCursor))
+                self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         if not any_inside:
-            self.setCursor(QCursor(Qt.ArrowCursor))
+            self.setCursor(QCursor(Qt.CursorShape.ArrowCursor))
         return super().mouseMoveEvent(event)
 
     def mousePressEvent(self, event):
-        for rect in self.player_info_positions:
+        for rect, player in self.player_info_positions.items():
             qrect = rect.toQRect()
             if qrect.contains(event.pos()):
-                player = self.player_info_positions[rect]
                 # toggle its membership in disabled_players, so users can click
                 # a second time to re-enable a player
                 if player in self.disabled_players:

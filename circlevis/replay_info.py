@@ -1,10 +1,10 @@
 from functools import partial
 
-from PyQt5.QtWidgets import (QLabel, QVBoxLayout, QFrame, QAbstractItemView,
+from PyQt6.QtWidgets import (QLabel, QVBoxLayout, QFrame, QAbstractItemView,
     QTableWidget, QTableWidgetItem)
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QCursor
-from circleguard import KeylessCircleguard, JudgmentType, Miss, convert_statistic
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QCursor
+from circleguard import KeylessCircleguard, JudgmentType, convert_statistic
 
 from circlevis.widgets import PushButton
 
@@ -46,10 +46,14 @@ class ReplayInfo(QFrame):
             "on map "
             f"<a href=\"https://osu.ppy.sh/b/{replay.map_id}\">{replay.map_id}"
             "</a>")
-        info_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        info_label.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        info_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        info_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextBrowserInteraction
+        )
         info_label.setOpenExternalLinks(True)
-        info_label.setCursor(QCursor(Qt.IBeamCursor))
+        info_label.setCursor(QCursor(Qt.CursorShape.IBeamCursor))
 
         if circleguard.map_available(replay):
             ur = ur or circleguard.ur(replay)
@@ -69,16 +73,20 @@ class ReplayInfo(QFrame):
             ucv_ur = "Unkown"
 
         ur_label = QLabel(f"<b>cvUR:</b> {ur} ({ucv_ur} ucv)")
-        ur_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        ur_label.setCursor(QCursor(Qt.IBeamCursor))
+        ur_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        ur_label.setCursor(QCursor(Qt.CursorShape.IBeamCursor))
 
         frametime = frametime or circleguard.frametime(replay)
         frametime = round(frametime, 2)
         frametime = self.maybe_highlight(frametime,
             self.FRAMETIME_YELLOW_THRESH, self.FRAMETIME_RED_THRESH)
         frametime_label = QLabel(f"<b>cv frametime:</b> {frametime}")
-        frametime_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
-        frametime_label.setCursor(QCursor(Qt.IBeamCursor))
+        frametime_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        frametime_label.setCursor(QCursor(Qt.CursorShape.IBeamCursor))
 
         events_label = QLabel("Events Table")
 
@@ -121,7 +129,7 @@ class ReplayInfo(QFrame):
             events_table.verticalHeader().width() + 60)
 
         layout = QVBoxLayout()
-        layout.setAlignment(Qt.AlignTop)
+        layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         layout.addWidget(info_label)
         layout.addWidget(ur_label)
         layout.addWidget(frametime_label)
@@ -186,7 +194,7 @@ class EventsTable(QTableWidget):
         self.setColumnCount(3)
         self.setHorizontalHeaderLabels(["Type", "Time (ms)", "Jump To"])
         # https://forum.qt.io/topic/82749/how-to-make-qtablewidget-read-only
-        self.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         # use monospaced font for the table, otherwise some timestamps are
         # smaller than others even though they have the same number of digits
         # https://stackoverflow.com/a/1835938/12164878
@@ -217,7 +225,7 @@ class EventsTable(QTableWidget):
             jump_to_button = PushButton("Jump")
             jump_to_button.setMaximumWidth(60)
             layout = QVBoxLayout()
-            layout.setAlignment(Qt.AlignCenter)
+            layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
             layout.setContentsMargins(15, 3, 15, 3)
             layout.addWidget(jump_to_button)
             button_widget.setLayout(layout)

@@ -2,13 +2,14 @@ from dataclasses import dataclass
 from typing import Type, Callable
 from functools import partial
 
+from circleguard import Replay
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QKeySequence, QShortcut
+
 from circlevis.beatmap_info import BeatmapInfo
 from circlevis.visualizer import Visualizer
-
-from circleguard import Replay
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QShortcut
-from PyQt5.QtGui import QKeySequence
+from circlevis.palette import dark_palette
 
 
 @dataclass
@@ -40,7 +41,8 @@ class Classifier:
     def __init__(self, replays, cg, hotkeys):
         self.app = QApplication([])
         self.app.setStyle("Fusion")
-        self.app.setApplicationName("Circleguard")
+        self.app.setApplicationName("Circlevis")
+        self.app.setPalette(dark_palette)
 
         self._replays = iter(replays)
         self.cg = cg
@@ -49,7 +51,7 @@ class Classifier:
 
     def start(self):
         self.next_replay()
-        self.app.exec_()
+        self.app.exec()
 
     def next_replay(self):
         """

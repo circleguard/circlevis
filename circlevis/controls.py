@@ -1,6 +1,6 @@
-from PyQt5.QtWidgets import (QFrame, QGridLayout, QLabel, QVBoxLayout)
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt6.QtWidgets import (QFrame, QGridLayout, QLabel, QVBoxLayout)
+from PyQt6.QtGui import QIcon
+from PyQt6.QtCore import Qt, pyqtSignal
 from circleguard import Mod, Replay
 
 from circlevis.utils import resource_path
@@ -21,8 +21,7 @@ class VisualizerControls(QFrame):
     def __init__(self, speed, mods, replays):
         super().__init__()
         self.replays = replays
-
-        self.time_slider = JumpSlider(Qt.Horizontal)
+        self.time_slider = JumpSlider(Qt.Orientation.Horizontal)
         self.time_slider.setValue(0)
         self.time_slider.setFixedHeight(20)
         self.time_slider.setStyleSheet("outline: none;")
@@ -59,7 +58,9 @@ class VisualizerControls(QFrame):
 
         self.speed_label = QLabel(f"{speed}x")
         self.speed_label.setFixedSize(40, 20)
-        self.speed_label.setAlignment(Qt.AlignCenter | Qt.AlignVCenter)
+        self.speed_label.setAlignment(
+            Qt.AlignmentFlag.AlignCenter | Qt.AlignmentFlag.AlignVCenter
+        )
 
         # info widget is a button when we only have one replay, and a combobox
         # otherwise to let the user choose which replay to see the info for
@@ -141,8 +142,11 @@ class VisualizerControls(QFrame):
         # `x - 44` to not make the popup hang over the right side of the window
         # (aftering centering it horizontally), and `y - 6` to account for the
         # space between the button and the top of the controls row
-        self.settings_popup.setGeometry(global_pos.x() - (popup_width / 2) - 44,\
-            global_pos.y() - popup_height - 6, popup_width, popup_height)
+        self.settings_popup.setGeometry(
+            int(global_pos.x() - (popup_width / 2) - 44),
+            int(global_pos.y() - popup_height - 6),
+            popup_width, popup_height
+        )
 
     def info_combobox_activated(self):
         # don't do anything if they selected the default entry
@@ -167,7 +171,7 @@ class SettingsPopup(QFrame):
         super().__init__(parent)
         # we're technically a window, but we don't want to be shown as such to
         # the user, so hide our window features (like the top bar)
-        self.setWindowFlags(Qt.Popup)
+        self.setWindowFlags(Qt.WindowType.Popup)
 
         self.setMaximumWidth(300)
         self.setMaximumHeight(100)
