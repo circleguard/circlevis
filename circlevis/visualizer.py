@@ -142,6 +142,9 @@ class VisualizerApp(QApplication):
         self.statistic_functions = statistic_functions
         self.snaps_args = snaps_args
 
+        # set in exec
+        self.visualizer = None
+
     def exec(self):
         """
         Displays the visualizer and enters into the event loop, which will block
