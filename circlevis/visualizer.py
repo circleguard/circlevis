@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QMainWindow, QApplication
 from PyQt6.QtCore import Qt
 
 from circlevis.interface import Interface
-from circlevis.palette import dark_palette
+from circlevis.palette import get_dark_palette
 
 PREVIOUS_ERRSTATE = np.seterr('raise')
 
@@ -147,6 +147,7 @@ class VisualizerApp(QApplication):
         Displays the visualizer and enters into the event loop, which will block
         the calling thread.
         """
+        dark_palette = get_dark_palette()
         self.setPalette(dark_palette)
         # we can't create this in ``__init__`` because we can't instantiate a
         # ``QWidget`` before a ``QApplication``, so delay until here, which is

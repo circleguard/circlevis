@@ -9,7 +9,7 @@ from PyQt6.QtGui import QKeySequence, QShortcut
 
 from circlevis.beatmap_info import BeatmapInfo
 from circlevis.visualizer import Visualizer
-from circlevis.palette import dark_palette
+from circlevis.palette import get_dark_palette
 
 
 @dataclass
@@ -42,6 +42,7 @@ class Classifier:
         self.app = QApplication([])
         self.app.setStyle("Fusion")
         self.app.setApplicationName("Circlevis")
+        dark_palette = get_dark_palette()
         self.app.setPalette(dark_palette)
 
         self._replays = iter(replays)
