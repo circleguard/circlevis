@@ -67,11 +67,12 @@ class Classifier:
             self.done()
             return
 
-        self.load(replay)
+        load_succeeded = self.load(replay)
         bm = self.beatmap_info(replay)
 
-        if self.should_skip(replay, bm):
-            return self.next_replay()
+        if not load_succeeded or self.should_skip(replay, bm):
+            self.next_replay()
+            return
 
         self.vis = self.visualizer(bm, replay)
         for hotkey in self.hotkeys:
@@ -91,8 +92,11 @@ class Classifier:
         """
         Load the replay so it can be visualized. Provided as a hook for
         subclasses.
+        Returns True if the load succeeded, and False otherwise. Replays for
+        which the load did not succeed will be skipped.
         """
         self.cg.load(replay)
+        return True
 
     def beatmap_info(self, replay):
         """
