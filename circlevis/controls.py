@@ -192,7 +192,7 @@ class SettingsPopup(QFrame):
         self.circle_size_mod_cmb = ComboBoxSetting("Adjust mods:", start_circle_size, ["EZ", "NM", "HR"])
         self.circle_size_mod_cmb.value_changed.connect(self.circle_size_mod_changed)
 
-        self.num_frames_slider = SliderSetting("Num. frames:", 15, 1, 30)
+        self.num_frames_slider = SliderSetting("Num. frames:", 15, 1, 60)
         self.num_frames_slider.value_changed.connect(self.num_frames_changed)
 
         self.hit_error_bar_cb = CheckboxSetting("Draw hit error bar:", True)
