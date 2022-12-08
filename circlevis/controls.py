@@ -72,7 +72,7 @@ class VisualizerControls(QFrame):
             self.info_widget.clicked.connect(self.info_button_clicked)
         else:
             self.info_widget = ComboBox()
-            self.info_widget.setInsertPolicy(ComboBox.NoInsert)
+            self.info_widget.setInsertPolicy(ComboBox.InsertPolicy.NoInsert)
             self.info_widget.addItem(QIcon(resource_path("info.png")), "")
             self.info_widget.setFixedSize(45, 20)
             self.info_widget.setToolTip("Replay information")
