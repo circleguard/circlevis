@@ -73,14 +73,13 @@ class Visualizer(QMainWindow):
         np.seterr(**PREVIOUS_ERRSTATE)
 
     def toggle_fullscreen(self):
-        if self.windowState() == Qt.WindowFullScreen:
+        if self.windowState() == Qt.WindowState.WindowFullScreen:
             self.exit_fullscreen()
             return
-        else:
-            self.setWindowState(Qt.WindowFullScreen)
+        self.setWindowState(Qt.WindowState.WindowFullScreen)
 
     def exit_fullscreen(self):
-        self.setWindowState(Qt.WindowNoState)
+        self.setWindowState(Qt.WindowState.WindowNoState)
 
     def seek_to_paste_contents(self):
         clipboard = QApplication.clipboard()
