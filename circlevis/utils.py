@@ -1,5 +1,6 @@
 from pathlib import Path
 import sys
+from enum import Enum, auto
 
 ROOT_PATH = Path(__file__).parent.absolute()
 def resource_path(path):
@@ -24,3 +25,19 @@ def resource_path(path):
         # As we're basically only providing it for circleguard, that's fine.
         return str(Path(sys._MEIPASS) / "circlevis" / "resources" / Path(path)) # pylint: disable=no-member
     return str(ROOT_PATH / "resources" / Path(path))
+
+
+class StatisticMode(Enum):
+    # run once for each player.
+    # signature: (player: Player, i: int)
+    EACH = auto()
+    # run once for all players.
+    # signature: (players: list[Player], indices: list[int])
+    ONCE = auto()
+
+
+def statistic_function(mode):
+    def decorator(f):
+        f.__circlevis_statistic_mode = mode
+        return f
+    return decorator

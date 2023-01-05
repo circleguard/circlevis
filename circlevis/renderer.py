@@ -15,6 +15,7 @@ from circleguard import (Mod, Key, hitradius, hitwindows, JudgmentType,
 
 from circlevis.clock import Timer
 from circlevis.player import Player
+from circlevis.utils import StatisticMode
 
 WIDTH_LINE = 1
 WIDTH_LINE_RAW_VIEW = 2
@@ -661,11 +662,31 @@ class Renderer(QFrame):
                 self.painter.drawText(5, y, text)
 
             for function in self.statistic_functions:
-                y += 13
-                xys = [player.xy for player in self.players]
-                indices = [player.end_pos for player in self.players]
-                result = function(xys, indices)
-                self.painter.drawText(5, y, f"{function.__name__}: {result}")
+                # assume mode is EACH (once per player) if not specified
+                mode = getattr(
+                    function,
+                    "__circlevis_statistic_mode",
+                    StatisticMode.EACH
+                )
+
+                if mode is StatisticMode.EACH:
+                    for player in self.players:
+                        y += 13
+                        # dont draw statistics for disabled players
+                        # TODO probably should grew out text instead of removing
+                        # completely
+                        if player in self.disabled_players:
+                            continue
+
+                        i = player.end_pos
+                        result = function(player, i)
+                        self.painter.drawText(5, y, str(result))
+
+                if mode is StatisticMode.ONCE:
+                    y += 13
+                    indices = [player.end_pos for player in self.players]
+                    result = function(self.players, indices)
+                    self.painter.drawText(5, y, str(result))
 
 
     def draw_line(self, alpha, start, end, grey_out=False):
