@@ -1,4 +1,4 @@
-class Player():
+class Player:
     def __init__(self, replay, pen):
         self.pen = pen
         self.username = replay.username
