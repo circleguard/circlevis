@@ -197,7 +197,7 @@ class ReplayInfo(QFrame):
         else:
             self.active_filters.append(filter_item)
 
-        filtered_events = list(filter(lambda e: type(e) in self.active_filters, self.events))
+        filtered_events = [e for e in self.events if type(e) in self.active_filters]
         self.events_table.set_events(filtered_events)
 
     def __eq__(self, other):
