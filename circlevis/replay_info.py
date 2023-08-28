@@ -92,13 +92,13 @@ class ReplayInfo(QFrame):
         events_label = QLabel("Events Table")
 
         self.table_filters_popup = EventsTableFilters(self)
-        self.table_filters_popup.edge_hit_filter_signal.connect(partial(self.set_filter_item, EdgeHitEvent))
-        self.table_filters_popup.snaps_filter_signal.connect(partial(self.set_filter_item, SnapEvent))
-        self.table_filters_popup.misses_filter_signal.connect(partial(self.set_filter_item, MissEvent))
-        self.table_filters_popup.hit_100_filter_signal.connect(partial(self.set_filter_item, Hit100Event))
-        self.table_filters_popup.hit_50_filter_signal.connect(partial(self.set_filter_item, Hit50Event))
+        self.table_filters_popup.edge_hit_filter_signal.connect(partial(self.toggle_filter_item, EdgeHitEvent))
+        self.table_filters_popup.snaps_filter_signal.connect(partial(self.toggle_filter_item, SnapEvent))
+        self.table_filters_popup.misses_filter_signal.connect(partial(self.toggle_filter_item, MissEvent))
+        self.table_filters_popup.hit_100_filter_signal.connect(partial(self.toggle_filter_item, Hit100Event))
+        self.table_filters_popup.hit_50_filter_signal.connect(partial(self.toggle_filter_item, Hit50Event))
 
-        self.events_filter_button = PushButton("Filter events")
+        self.events_filter_button = PushButton("Filter Events")
         self.events_filter_button.clicked.connect(self.show_filters)
 
         self.active_filters = [EdgeHitEvent, SnapEvent, MissEvent, Hit100Event, Hit50Event]
@@ -190,8 +190,8 @@ class ReplayInfo(QFrame):
             popup_width, popup_height
         )
 
-    def set_filter_item(self, filter_item, value):
-        if not value and filter_item in self.active_filters:
+    def toggle_filter_item(self, filter_item):
+        if filter_item in self.active_filters:
             self.active_filters.remove(filter_item)
         else:
             self.active_filters.append(filter_item)
