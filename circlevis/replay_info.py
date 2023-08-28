@@ -177,8 +177,6 @@ class ReplayInfo(QFrame):
         return statistic
 
     def show_filters(self):
-        # have to show before setting its geometry because it has some default
-        # geometry that doesn't reflect its actual proportions until it's shown
         self.table_filters_popup.show()
         global_pos = self.mapToGlobal(self.events_filter_button.pos())
         popup_height = self.table_filters_popup.size().height()
