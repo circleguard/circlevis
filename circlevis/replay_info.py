@@ -1,9 +1,10 @@
 from functools import partial
 
+from PyQt6.QtWidgets import (QLabel, QVBoxLayout, QFrame, QAbstractItemView,
+    QTableWidget, QTableWidgetItem, QGridLayout)
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QCursor
-from PyQt6.QtWidgets import (QLabel, QVBoxLayout, QFrame, QAbstractItemView,
-                             QTableWidget, QTableWidgetItem, QGridLayout)
+
 from circleguard import KeylessCircleguard, JudgmentType, convert_statistic
 
 from circlevis.widgets import CheckboxSetting, PushButton
