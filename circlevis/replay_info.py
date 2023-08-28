@@ -1,12 +1,13 @@
 from functools import partial
 
 from PyQt6.QtWidgets import (QLabel, QVBoxLayout, QFrame, QAbstractItemView,
-    QTableWidget, QTableWidgetItem)
+    QTableWidget, QTableWidgetItem, QGridLayout)
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QCursor
 from circleguard import KeylessCircleguard, JudgmentType, convert_statistic
 
-from circlevis.widgets import PushButton
+from circlevis.widgets import CheckboxSetting, PushButton
+
 
 class ReplayInfo(QFrame):
     seek_to = pyqtSignal(int)
@@ -90,7 +91,19 @@ class ReplayInfo(QFrame):
 
         events_label = QLabel("Events Table")
 
-        events = []
+        self.table_filters_popup = EventsTableFilters(self)
+        self.table_filters_popup.edge_hit_filter_signal.connect(partial(self.toggle_filter_item, EdgeHitEvent))
+        self.table_filters_popup.snaps_filter_signal.connect(partial(self.toggle_filter_item, SnapEvent))
+        self.table_filters_popup.misses_filter_signal.connect(partial(self.toggle_filter_item, MissEvent))
+        self.table_filters_popup.hit_100_filter_signal.connect(partial(self.toggle_filter_item, Hit100Event))
+        self.table_filters_popup.hit_50_filter_signal.connect(partial(self.toggle_filter_item, Hit50Event))
+
+        self.events_filter_button = PushButton("Filter Events")
+        self.events_filter_button.clicked.connect(self.show_filters)
+
+        self.active_filters = [EdgeHitEvent, SnapEvent, MissEvent, Hit100Event, Hit50Event]
+
+        self.events = []
         snaps = snaps or circleguard.snaps(replay, **snaps_args)
         snap_events = [SnapEvent(snap) for snap in snaps]
 
@@ -111,22 +124,30 @@ class ReplayInfo(QFrame):
                     if judgment.within(self.EDGE_HIT_THRESH):
                         edge_hits.append(EdgeHitEvent(judgment))
 
-        events.extend(snap_events)
-        events.extend(edge_hits)
-        events.extend(misses)
-        events.extend(hit100s)
-        events.extend(hit50s)
+        self.events.extend(snap_events)
+        self.events.extend(edge_hits)
+        self.events.extend(misses)
+        self.events.extend(hit100s)
+        self.events.extend(hit50s)
 
-        events_table = EventsTable(events)
-        events_table.jump_button_clicked.connect(self.seek_to)
+        self.events_table = EventsTable(self.events)
+        self.events_table.jump_button_clicked.connect(self.seek_to)
 
         close_button = PushButton("Close")
         close_button.clicked.connect(self.close_button_clicked)
         close_button.setMaximumWidth(80)
         # don't let ourselves get a horizontal scrollbar on the table by being
         # too small, + 60 to account for the vertical scrollbar I think?
-        self.setMinimumWidth(events_table.horizontalHeader().length() +
-            events_table.verticalHeader().width() + 60)
+        self.setMinimumWidth(self.events_table.horizontalHeader().length() +
+            self.events_table.verticalHeader().width() + 60)
+
+        self.events_label_frame = QFrame()
+        events_label_layout = QGridLayout()
+        events_label_layout.setContentsMargins(0, 0, 0, 0)
+        events_label_layout.addWidget(events_label, 0, 0, 1, 1)
+        events_label_layout.addWidget(self.events_filter_button, 0, 1, 1, 1)
+        self.events_label_frame.setLayout(events_label_layout)
+
 
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
@@ -134,8 +155,8 @@ class ReplayInfo(QFrame):
         layout.addWidget(ur_label)
         layout.addWidget(frametime_label)
         layout.addSpacing(180)
-        layout.addWidget(events_label)
-        layout.addWidget(events_table)
+        layout.addWidget(self.events_label_frame)
+        layout.addWidget(self.events_table)
         layout.addWidget(close_button)
         self.setLayout(layout)
 
@@ -153,6 +174,28 @@ class ReplayInfo(QFrame):
         elif statistic < red_threshold:
             statistic = f"<font color='red'>{statistic}</font>"
         return statistic
+
+    def show_filters(self):
+        self.table_filters_popup.show()
+        global_pos = self.mapToGlobal(self.events_filter_button.pos())
+        popup_height = self.table_filters_popup.size().height()
+        popup_width = self.table_filters_popup.size().width()
+
+        # `y + 16` to account for the size of the filter button
+        self.table_filters_popup.setGeometry(
+            int(global_pos.x()),
+            int(global_pos.y() + (popup_height / 2) + 16),
+            popup_width, popup_height
+        )
+
+    def toggle_filter_item(self, filter_item):
+        if filter_item in self.active_filters:
+            self.active_filters.remove(filter_item)
+        else:
+            self.active_filters.append(filter_item)
+
+        filtered_events = [e for e in self.events if type(e) in self.active_filters]
+        self.events_table.set_events(filtered_events)
 
     def __eq__(self, other):
         if not isinstance(other, ReplayInfo):
@@ -208,6 +251,14 @@ class EventsTable(QTableWidget):
         # font.setStyleHint(QFont.TypeWriter)
         # self.setFont(font)
 
+        self.set_events(events)
+
+        self.setColumnWidth(0, 80)
+        self.setColumnWidth(1, 70)
+        self.setColumnWidth(2, 90)
+
+    def set_events(self, events):
+        self.clear()
 
         self.setRowCount(len(events))
 
@@ -234,12 +285,46 @@ class EventsTable(QTableWidget):
                 partial(self.jump_button_clicked.emit, event.time))
             self.setCellWidget(i, 2, button_widget)
 
-        self.setColumnWidth(0, 80)
-        self.setColumnWidth(1, 70)
-        self.setColumnWidth(2, 90)
-
     # def resizeEvent(self, event):
     #     super().resizeEvent(event)
     #     self.setColumnWidth(0, self.width() / 3 - 20)
     #     self.setColumnWidth(1, self.width() / 3 - 20)
     #     self.setColumnWidth(2, self.width() / 3 - 20)
+
+class EventsTableFilters(QFrame):
+    edge_hit_filter_signal = pyqtSignal(bool)
+    snaps_filter_signal = pyqtSignal(bool)
+    misses_filter_signal = pyqtSignal(bool)
+    hit_100_filter_signal = pyqtSignal(bool)
+    hit_50_filter_signal = pyqtSignal(bool)
+
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.setWindowFlags(Qt.WindowType.Popup)
+
+        self.setMaximumWidth(300)
+        self.setMaximumHeight(100)
+
+        edge_hit_cb = CheckboxSetting("Edge hits:", True)
+        edge_hit_cb.state_changed.connect(self.edge_hit_filter_signal)
+
+        snaps_cb = CheckboxSetting("Snaps:", True)
+        snaps_cb.state_changed.connect(self.snaps_filter_signal)
+
+        misses_cb = CheckboxSetting("Misses:", True)
+        misses_cb.state_changed.connect(self.misses_filter_signal)
+
+        hit_100_cb = CheckboxSetting("100s:", True)
+        hit_100_cb.state_changed.connect(self.hit_100_filter_signal)
+
+        hit_50_cb = CheckboxSetting("50s:", True)
+        hit_50_cb.state_changed.connect(self.hit_50_filter_signal)
+
+        layout = QVBoxLayout()
+        layout.addWidget(edge_hit_cb)
+        layout.addWidget(snaps_cb)
+        layout.addWidget(misses_cb)
+        layout.addWidget(hit_100_cb)
+        layout.addWidget(hit_50_cb)
+        self.setLayout(layout)
