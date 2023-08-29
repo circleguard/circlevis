@@ -54,9 +54,9 @@ class CheckboxSetting(QFrame):
     def _state_changed(self, state):
         self.state_changed.emit(state == Qt.CheckState.Checked.value)
 
-    # toggle checkbox if we're clicked anywhere in this frame,
-    # so the label can be clicked to toggle as well
-    def mousePressEvent(self, event):
+    # toggle checkbox if we're clicked anywhere, so the label can be clicked to
+    # toggle as well
+    def mousePressEvent(self, _event):
         self.checkbox.toggle()
 
 
