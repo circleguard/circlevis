@@ -45,6 +45,7 @@ class CheckboxSetting(QFrame):
         layout.addWidget(label, 3)
         layout.addWidget(self.checkbox, 1)
         layout.setContentsMargins(0, 3, 0, 3)
+        self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         self.setLayout(layout)
 
     def checked(self):
@@ -52,6 +53,11 @@ class CheckboxSetting(QFrame):
 
     def _state_changed(self, state):
         self.state_changed.emit(state == Qt.CheckState.Checked.value)
+
+    # toggle checkbox if we're clicked anywhere, so the label can be clicked to
+    # toggle as well
+    def mousePressEvent(self, _event):
+        self.checkbox.toggle()
 
 
 class SliderSetting(QFrame):
