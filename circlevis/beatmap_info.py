@@ -1,4 +1,4 @@
-class BeatmapInfo():
+class BeatmapInfo:
     """
     Represents the information necessary to load a beatmap.
 
