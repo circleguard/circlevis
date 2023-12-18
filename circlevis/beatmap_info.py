@@ -11,9 +11,10 @@ class BeatmapInfo:
     ``None``.
     """
 
-    def __init__(self, *, map_id=None, path=None):
+    def __init__(self, *, map_id=None, path=None, beatmap=None):
         self.map_id = map_id
         self.path = path
+        self.beatmap = beatmap
 
     def available(self):
         """

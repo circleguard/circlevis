@@ -54,7 +54,9 @@ class Interface(QWidget):
             self.library = Library(self.temp_dir.name)
 
         self.beatmap = None
-        if beatmap_info.path:
+        if beatmap_info.beatmap:
+            self.beatmap = beatmap_info.beatmap
+        elif beatmap_info.path:
             self.beatmap = Beatmap.from_path(beatmap_info.path)
         elif beatmap_info.map_id:
             # TODO move temporary directory creation to slider probably, since
