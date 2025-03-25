@@ -3,6 +3,8 @@ import sys
 from enum import Enum, auto
 
 ROOT_PATH = Path(__file__).parent.absolute()
+
+
 def resource_path(path):
     """
     Get the resource path for a given file.
@@ -19,11 +21,13 @@ def resource_path(path):
         context, which does not accept a ``Path``.
     """
 
-    if hasattr(sys, '_MEIPASS'): # being run from a pyinstall'd app
+    if hasattr(sys, "_MEIPASS"):  # being run from a pyinstall'd app
         # this will only work if the consumer is using a circlevis hook to add
         # the circlevis resource files to the pyinstall'd app.
         # As we're basically only providing it for circleguard, that's fine.
-        return str(Path(sys._MEIPASS) / "circlevis" / "resources" / Path(path)) # pylint: disable=no-member
+        return str(
+            Path(sys._MEIPASS) / "circlevis" / "resources" / Path(path)
+        )  # pylint: disable=no-member
     return str(ROOT_PATH / "resources" / Path(path))
 
 
@@ -40,4 +44,5 @@ def statistic_function(mode):
     def decorator(f):
         f.__circlevis_statistic_mode = mode
         return f
+
     return decorator

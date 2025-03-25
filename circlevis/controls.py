@@ -1,11 +1,18 @@
-from PyQt6.QtWidgets import (QFrame, QGridLayout, QLabel, QVBoxLayout)
+from PyQt6.QtWidgets import QFrame, QGridLayout, QLabel, QVBoxLayout
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt, pyqtSignal
 from circleguard import Mod, Replay
 
 from circlevis.utils import resource_path
-from circlevis.widgets import (JumpSlider, PushButton, CheckboxSetting,
-    ComboBoxSetting, SliderSetting, ComboBox)
+from circlevis.widgets import (
+    JumpSlider,
+    PushButton,
+    CheckboxSetting,
+    ComboBoxSetting,
+    SliderSetting,
+    ComboBox,
+)
+
 
 class VisualizerControls(QFrame):
     raw_view_changed = pyqtSignal(bool)
@@ -80,7 +87,6 @@ class VisualizerControls(QFrame):
             for replay in replays:
                 self.info_widget.addItem(replay.username, replay)
 
-
         self.settings_button = PushButton()
         self.settings_button.setIcon(QIcon(resource_path("settings_wheel.png")))
         self.settings_button.setFixedSize(20, 20)
@@ -89,12 +95,20 @@ class VisualizerControls(QFrame):
 
         self.settings_popup = SettingsPopup(self, mods)
         self.settings_popup.raw_view_changed.connect(self.raw_view_changed)
-        self.settings_popup.only_color_keydowns_changed.connect(self.only_color_keydowns_changed)
+        self.settings_popup.only_color_keydowns_changed.connect(
+            self.only_color_keydowns_changed
+        )
         self.settings_popup.hitobjects_changed.connect(self.hitobjects_changed)
-        self.settings_popup.approach_circles_changed.connect(self.approach_circles_changed)
+        self.settings_popup.approach_circles_changed.connect(
+            self.approach_circles_changed
+        )
         self.settings_popup.num_frames_changed.connect(self.num_frames_changed)
-        self.settings_popup.draw_hit_error_bar_changed.connect(self.draw_hit_error_bar_changed)
-        self.settings_popup.circle_size_mod_changed.connect(self.circle_size_mod_changed)
+        self.settings_popup.draw_hit_error_bar_changed.connect(
+            self.draw_hit_error_bar_changed
+        )
+        self.settings_popup.circle_size_mod_changed.connect(
+            self.circle_size_mod_changed
+        )
 
         self.speed_up_button = PushButton()
         self.speed_up_button.setIcon(QIcon(resource_path("speed_up.png")))
@@ -145,7 +159,8 @@ class VisualizerControls(QFrame):
         self.settings_popup.setGeometry(
             int(global_pos.x() - (popup_width / 2) - 44),
             int(global_pos.y() - popup_height - 6),
-            popup_width, popup_height
+            popup_width,
+            popup_height,
         )
 
     def info_combobox_activated(self):
@@ -189,7 +204,9 @@ class SettingsPopup(QFrame):
         self.approach_circles_cb.state_changed.connect(self.approach_circles_changed)
 
         start_circle_size = "EZ" if Mod.EZ in mods else "HR" if Mod.HR in mods else "NM"
-        self.circle_size_mod_cmb = ComboBoxSetting("Adjust mods:", start_circle_size, ["EZ", "NM", "HR"])
+        self.circle_size_mod_cmb = ComboBoxSetting(
+            "Adjust mods:", start_circle_size, ["EZ", "NM", "HR"]
+        )
         self.circle_size_mod_cmb.value_changed.connect(self.circle_size_mod_changed)
 
         self.num_frames_slider = SliderSetting("Num. frames:", 15, 1, 60)

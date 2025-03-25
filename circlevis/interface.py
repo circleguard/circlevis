@@ -1,8 +1,7 @@
 from tempfile import TemporaryDirectory
 from threading import Thread
 
-from PyQt6.QtWidgets import (QGridLayout, QWidget, QApplication, QSplitter,
-    QFrame)
+from PyQt6.QtWidgets import QGridLayout, QWidget, QApplication, QSplitter, QFrame
 from PyQt6.QtCore import Qt
 from circleguard import Mod, KeylessCircleguard
 from slider import Library, Beatmap
@@ -11,9 +10,20 @@ from circlevis.renderer import Renderer
 from circlevis.controls import VisualizerControls
 from circlevis.replay_info import ReplayInfo
 
+
 class Interface(QWidget):
-    def __init__(self, beatmap_info, replays, events, library, speeds, \
-        start_speed, paint_info, statistic_functions, snaps_args):
+    def __init__(
+        self,
+        beatmap_info,
+        replays,
+        events,
+        library,
+        speeds,
+        start_speed,
+        paint_info,
+        statistic_functions,
+        snaps_args,
+    ):
         super().__init__()
         self.speeds = speeds
         self.replays = replays
@@ -40,7 +50,7 @@ class Interface(QWidget):
         # priority instead, so as not to starve the draw thread. We should be
         # using QThreads instead of python threads regardless.
 
-        if len(replays) <= 5:
+        if len(replays) <= 5 and False:
             # and here's the thread which will actually start those calculations
             cg_statistics_worked = Thread(target=self.calculate_cg_statistics)
             # allow users to quit before we're done calculating
@@ -61,7 +71,9 @@ class Interface(QWidget):
         elif beatmap_info.map_id:
             # TODO move temporary directory creation to slider probably, since
             # this logic is now duplicated here and in circlecore
-            self.beatmap = self.library.lookup_by_id(beatmap_info.map_id, download=True, save=True)
+            self.beatmap = self.library.lookup_by_id(
+                beatmap_info.map_id, download=True, save=True
+            )
 
         dt_enabled = any(Mod.DT in replay.mods for replay in replays)
         ht_enabled = any(Mod.HT in replay.mods for replay in replays)
@@ -70,8 +82,9 @@ class Interface(QWidget):
         if ht_enabled:
             start_speed = 0.75
 
-        self.renderer = Renderer(self.beatmap, replays, events, start_speed,
-            paint_info, statistic_functions)
+        self.renderer = Renderer(
+            self.beatmap, replays, events, start_speed, paint_info, statistic_functions
+        )
         self.renderer.update_time_signal.connect(self.update_slider)
         # if the renderer wants to pause itself (eg when the playback hits the
         # end of the replay), we kick it back to us (the `Interface`) so we can
@@ -88,28 +101,43 @@ class Interface(QWidget):
         self.controls.pause_button.clicked.connect(self.toggle_pause)
         self.controls.play_reverse_button.clicked.connect(self.play_reverse)
         self.controls.play_normal_button.clicked.connect(self.play_normal)
-        self.controls.next_frame_button.clicked.connect(lambda: self.change_frame(reverse=False))
-        self.controls.previous_frame_button.clicked.connect(lambda: self.change_frame(reverse=True))
+        self.controls.next_frame_button.clicked.connect(
+            lambda: self.change_frame(reverse=False)
+        )
+        self.controls.previous_frame_button.clicked.connect(
+            lambda: self.change_frame(reverse=True)
+        )
         self.controls.speed_up_button.clicked.connect(self.increase_speed)
         self.controls.speed_down_button.clicked.connect(self.lower_speed)
         self.controls.copy_to_clipboard_button.clicked.connect(self.copy_to_clipboard)
         self.controls.time_slider.sliderMoved.connect(self.renderer.seek_to)
-        self.controls.time_slider.setRange(self.renderer.playback_start, self.renderer.playback_end)
+        self.controls.time_slider.setRange(
+            self.renderer.playback_start, self.renderer.playback_end
+        )
 
         self.controls.raw_view_changed.connect(self.renderer.raw_view_changed)
-        self.controls.only_color_keydowns_changed.connect(self.renderer.only_color_keydowns_changed)
+        self.controls.only_color_keydowns_changed.connect(
+            self.renderer.only_color_keydowns_changed
+        )
         self.controls.hitobjects_changed.connect(self.renderer.hitobjects_changed)
-        self.controls.approach_circles_changed.connect(self.renderer.approach_circles_changed)
+        self.controls.approach_circles_changed.connect(
+            self.renderer.approach_circles_changed
+        )
         self.controls.num_frames_changed.connect(self.renderer.num_frames_changed)
-        self.controls.draw_hit_error_bar_changed.connect(self.renderer.draw_hit_error_bar_changed)
-        self.controls.circle_size_mod_changed.connect(self.renderer.circle_size_mod_changed)
+        self.controls.draw_hit_error_bar_changed.connect(
+            self.renderer.draw_hit_error_bar_changed
+        )
+        self.controls.circle_size_mod_changed.connect(
+            self.renderer.circle_size_mod_changed
+        )
         self.controls.show_info_for_replay.connect(self.show_info_panel)
-
 
         self.splitter = QSplitter()
         # splitter lays widgets horizontally by default, so combine renderer and
         # controls into one single widget vertically
-        self.splitter.addWidget(Combined([self.renderer, self.controls], Qt.Orientation.Vertical))
+        self.splitter.addWidget(
+            Combined([self.renderer, self.controls], Qt.Orientation.Vertical)
+        )
 
         layout = QGridLayout()
         layout.addWidget(self.splitter, 1, 0, 1, 1)
@@ -194,9 +222,18 @@ class Interface(QWidget):
             replay_info = self.replay_info_cache[replay]
             replay_info.show()
         else:
-            ur, frametime, snaps, judgments = self.replay_statistics_precalculated[replay]
-            replay_info = ReplayInfo(replay, self.library.path, ur, frametime,
-                snaps, judgments, self.snaps_args)
+            ur, frametime, snaps, judgments = self.replay_statistics_precalculated[
+                replay
+            ]
+            replay_info = ReplayInfo(
+                replay,
+                self.library.path,
+                ur,
+                frametime,
+                snaps,
+                judgments,
+                self.snaps_args,
+            )
             replay_info.seek_to.connect(self.seek_to)
 
         # don't show two of the same info panels at once
@@ -232,8 +269,12 @@ class Interface(QWidget):
 
             frametime = cg.frametime(replay)
             snaps = cg.snaps(replay, **self.snaps_args)
-            self.replay_statistics_precalculated[replay] = (ur, frametime,
-                snaps, judgments)
+            self.replay_statistics_precalculated[replay] = (
+                ur,
+                frametime,
+                snaps,
+                judgments,
+            )
 
 
 class Combined(QFrame):
@@ -247,8 +288,10 @@ class Combined(QFrame):
         layout.setContentsMargins(0, 0, 0, 0)
 
         if direction not in [Qt.Orientation.Horizontal, Qt.Orientation.Vertical]:
-            raise ValueError("`direction` must be one of [Qt.Orientation.Horizontal, "
-                "Qt.Orientation.Vertical]")
+            raise ValueError(
+                "`direction` must be one of [Qt.Orientation.Horizontal, "
+                "Qt.Orientation.Vertical]"
+            )
 
         for i, widget in enumerate(widgets):
             if direction == Qt.Orientation.Horizontal:

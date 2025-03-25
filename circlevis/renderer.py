@@ -5,13 +5,18 @@ from dataclasses import dataclass
 
 import numpy as np
 from scipy import interpolate
-from PyQt6.QtGui import (QBrush, QPen, QColor, QPalette, QPainter, QPainterPath,
-    QCursor)
+from PyQt6.QtGui import QBrush, QPen, QColor, QPalette, QPainter, QPainterPath, QCursor
 from PyQt6.QtWidgets import QFrame
 from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QPointF, QRectF, QRect
 from slider.beatmap import Circle, Slider, Spinner
-from circleguard import (Mod, Key, hitradius, hitwindows, JudgmentType,
-    KeylessCircleguard)
+from circleguard import (
+    Mod,
+    Key,
+    hitradius,
+    hitwindows,
+    JudgmentType,
+    KeylessCircleguard,
+)
 
 from circlevis.clock import Timer
 from circlevis.player import Player
@@ -88,11 +93,14 @@ class Renderer(QFrame):
     pause_signal = pyqtSignal()
     loaded_signal = pyqtSignal()
 
-    def __init__(self, beatmap, replays, events, start_speed, paint_info, \
-        statistic_functions):
+    def __init__(
+        self, beatmap, replays, events, start_speed, paint_info, statistic_functions
+    ):
         super().__init__()
-        self.setMinimumSize(GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH * 2,
-            GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT * 2)
+        self.setMinimumSize(
+            GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH * 2,
+            GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT * 2,
+        )
         self.beatmap = beatmap
         # list of timestamps to highlight the frames of in a different color
         self.events = events
@@ -134,8 +142,9 @@ class Renderer(QFrame):
         self.use_hr = any(Mod.HR in replay.mods for replay in replays)
         self.use_ez = any(Mod.EZ in replay.mods for replay in replays)
         if beatmap:
-            self.hit_objects = beatmap.hit_objects(hard_rock=self.use_hr,
-                easy=self.use_ez)
+            self.hit_objects = beatmap.hit_objects(
+                hard_rock=self.use_hr, easy=self.use_ez
+            )
             self.playback_end = self.get_hit_endtime(self.hit_objects[-1])
 
             self.calculate_beatmap_stats(self.use_hr, self.use_ez)
@@ -195,15 +204,19 @@ class Renderer(QFrame):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.next_frame_from_timer)
         # 62 fps (1000ms / 60frames but the result can only be a integer)
-        self.timer.start(int(1000/60))
+        self.timer.start(int(1000 / 60))
 
         # black background
         pal = QPalette()
-        pal.setColor(QPalette.ColorGroup.Normal,
-            QPalette.ColorRole.Window, Qt.GlobalColor.black)
+        pal.setColor(
+            QPalette.ColorGroup.Normal, QPalette.ColorRole.Window, Qt.GlobalColor.black
+        )
         # also set when app is in background
-        pal.setColor(QPalette.ColorGroup.Inactive,
-            QPalette.ColorRole.Window, Qt.GlobalColor.black)
+        pal.setColor(
+            QPalette.ColorGroup.Inactive,
+            QPalette.ColorRole.Window,
+            Qt.GlobalColor.black,
+        )
         self.setAutoFillBackground(True)
         self.setPalette(pal)
 
@@ -219,13 +232,15 @@ class Renderer(QFrame):
         self.should_draw_hit_error_bar = True
         # TODO expose this as a setting somewhere? it's not toggleable anywhere
         # currently
-        self.should_draw_judgment_indicators = True
+        self.should_draw_judgment_indicators = False
 
         self.next_frame()
 
         self.hitobj_to_judgments = {}
         cg = KeylessCircleguard()
-        self.can_access_judgments = self.num_replays == 1 and cg.map_available(replays[0])
+        self.can_access_judgments = self.num_replays == 1 and cg.map_available(
+            replays[0]
+        )
         if self.can_access_judgments:
             r = replays[0]
 
@@ -243,7 +258,6 @@ class Renderer(QFrame):
                 # hitobjs again (or make them subclasses, or some such)
                 self.hitobj_to_judgments[judgment.hitobject.t] = judgment
 
-
     def resizeEvent(self, event):
         width = event.size().width() - GAMEPLAY_PADDING_WIDTH * 2
         height = event.size().height() - GAMEPLAY_PADDING_HEIGHT * 2
@@ -259,12 +273,10 @@ class Renderer(QFrame):
             self.x_offset = (width - GAMEPLAY_WIDTH * y_scale) / 2
 
     def _x(self, position):
-        return (self.x_offset + GAMEPLAY_PADDING_WIDTH +
-            self.scaled_number(position))
+        return self.x_offset + GAMEPLAY_PADDING_WIDTH + self.scaled_number(position)
 
     def _y(self, position):
-        return (self.y_offset + GAMEPLAY_PADDING_HEIGHT +
-            self.scaled_number(position))
+        return self.y_offset + GAMEPLAY_PADDING_HEIGHT + self.scaled_number(position)
 
     def scaled_point(self, x, y):
         return QPointF(self._x(x), self._y(y))
@@ -415,8 +427,12 @@ class Renderer(QFrame):
         PEN_WHITE.setWidth(self.scaled_number(1))
         self.painter.setPen(PEN_WHITE)
         self.painter.setOpacity(0.25)
-        self.painter.drawRect(QRectF(self.scaled_point(0, 0),
-            self.scaled_point(GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT)))
+        self.painter.drawRect(
+            QRectF(
+                self.scaled_point(0, 0),
+                self.scaled_point(GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT),
+            )
+        )
 
     def paint_cursor(self, player):
         """
@@ -441,8 +457,7 @@ class Renderer(QFrame):
             # loop
             if i == len(player.xy) - 1:
                 continue
-            highlight = (player.t[i] in self.events or player.t[i + 1] in
-                self.events)
+            highlight = player.t[i] in self.events or player.t[i + 1] in self.events
             if highlight and not highlighted_pen:
                 self.painter.setPen(PEN_HIGHLIGHT)
                 highlighted_pen = True
@@ -460,8 +475,12 @@ class Renderer(QFrame):
                 # keydown
                 if self.only_color_keydowns and not bool(player.keydowns[i]):
                     grey_out = True
-            self.draw_line((i - player.start_pos) * alpha_step, player.xy[i],
-                    player.xy[i + 1], grey_out=grey_out)
+            self.draw_line(
+                (i - player.start_pos) * alpha_step,
+                player.xy[i],
+                player.xy[i + 1],
+                grey_out=grey_out,
+            )
         pen.setWidth(self.scaled_number(WIDTH_CROSS))
         self.painter.setPen(pen)
         for i in range(player.start_pos, player.end_pos + 1):
@@ -579,12 +598,12 @@ class Renderer(QFrame):
             minutes = abs(minutes)
             seconds = abs(seconds)
 
-        self.painter.drawText(5 + 4 + x, y,
-            f"ms ({sign}{minutes:01}:{seconds:02})")
+        self.painter.drawText(5 + 4 + x, y, f"ms ({sign}{minutes:01}:{seconds:02})")
 
         self.player_info_positions = {}
         if self.num_replays > 0:
             for player in self.players:
+
                 def _set_opacity(opacity):
                     if player in self.disabled_players:
                         opacity /= 2.4
@@ -605,19 +624,21 @@ class Renderer(QFrame):
                 self.painter.drawRect(44, y - 9, 10, 10)
                 _set_opacity(1)
                 self.painter.setPen(pen)
-                info_text = (f"{player.username} {player.mods.short_name()}: "
+                info_text = (
+                    f"{player.username} {player.mods.short_name()}: "
                     f"{player.xy[player.end_pos][0]:.2f}, "
-                    f"{player.xy[player.end_pos][1]:.2f}")
+                    f"{player.xy[player.end_pos][1]:.2f}"
+                )
                 self.painter.drawText(57, y, info_text)
                 # not sure why we need to do ``y - 9`` instead of 9 here,
                 # our ``drawText`` call is perfectly happy to accept ``y`` but
                 # we need to pass ``y - 9`` to our ``drawRect`` calls...maybe 9
                 # was a manually determined number that causes the text to align
                 # with the drawn boxes?
-                info_pos = self.painter.boundingRect(5, y - 9, 0, 0, 0,
-                    info_text)
-                info_pos = Rect(info_pos.x(), info_pos.y(), info_pos.width(),
-                    info_pos.height())
+                info_pos = self.painter.boundingRect(5, y - 9, 0, 0, 0, info_text)
+                info_pos = Rect(
+                    info_pos.x(), info_pos.y(), info_pos.width(), info_pos.height()
+                )
                 # unfortunately the rects overlap if we don't make this manual
                 # adjustment; would like to figure out why but this works for
                 # now.
@@ -634,8 +655,10 @@ class Renderer(QFrame):
                     y += 13
                     p1 = self.players[0]
                     p2 = self.players[1]
-                    distance = math.sqrt(((p1.xy[p1.end_pos][0] - p2.xy[p2.end_pos][0]) ** 2) +
-                                         ((p1.xy[p1.end_pos][1] - p2.xy[p2.end_pos][1]) ** 2))
+                    distance = math.sqrt(
+                        ((p1.xy[p1.end_pos][0] - p2.xy[p2.end_pos][0]) ** 2)
+                        + ((p1.xy[p1.end_pos][1] - p2.xy[p2.end_pos][1]) ** 2)
+                    )
                     self.painter.drawText(5, y, f"{int(distance)}px apart")
                 except IndexError:
                     # we may only have data from one cursor at the moment
@@ -648,8 +671,9 @@ class Renderer(QFrame):
                 closest_hitobj = self.beatmap.closest_hitobject(current_t)
                 if self.use_hr:
                     closest_hitobj = closest_hitobj.hard_rock
-                distance = self.distance_between(player.xy[player.end_pos],
-                    closest_hitobj)
+                distance = self.distance_between(
+                    player.xy[player.end_pos], closest_hitobj
+                )
 
                 # show "x px inside hitobj" instead of a negative distance
                 inside = False
@@ -664,9 +688,7 @@ class Renderer(QFrame):
             for function in self.statistic_functions:
                 # assume mode is EACH (once per player) if not specified
                 mode = getattr(
-                    function,
-                    "__circlevis_statistic_mode",
-                    StatisticMode.EACH
+                    function, "__circlevis_statistic_mode", StatisticMode.EACH
                 )
 
                 if mode is StatisticMode.EACH:
@@ -688,7 +710,6 @@ class Renderer(QFrame):
                     result = function(self.players, indices)
                     self.painter.drawText(5, y, str(result))
 
-
     def draw_line(self, alpha, start, end, grey_out=False):
         """
         Draws a line at the given alpha level from the start point to the end
@@ -706,8 +727,9 @@ class Renderer(QFrame):
             self.painter.setPen(PEN_GREY_INACTIVE)
 
         self.painter.setOpacity(alpha)
-        self.painter.drawLine(self.scaled_point(start[0], start[1]),
-            self.scaled_point(end[0], end[1]))
+        self.painter.drawLine(
+            self.scaled_point(start[0], start[1]), self.scaled_point(end[0], end[1])
+        )
 
         if self.raw_view and grey_out:
             self.painter.setPen(prev_pen)
@@ -736,7 +758,7 @@ class Renderer(QFrame):
             prev_pen = self.painter.pen()
             PEN_GREY_INACTIVE.setWidth(self.scaled_number(WIDTH_CROSS))
             self.painter.setPen(PEN_GREY_INACTIVE)
-        half_width = LENGTH_CROSS/2
+        half_width = LENGTH_CROSS / 2
         x = point[0]
         y = point[1]
         x1 = x + half_width
@@ -748,7 +770,6 @@ class Renderer(QFrame):
         self.draw_line(alpha, [x2, y1], [x1, y2])
         if grey_out or highlight:
             self.painter.setPen(prev_pen)
-
 
     def draw_hitobject(self, hitobj):
         """
@@ -769,9 +790,17 @@ class Renderer(QFrame):
         Draws a circle hitobject.
         """
         current_time = self.clock.get_time()
-        fade_out = max(0, ((current_time - self.get_hit_time(hitobj)) / self.hitwindow_50))
-        opacity = min(1, ((current_time - (self.get_hit_time(hitobj) - self.preempt)) / self.fade_in))
-        opacity = max(0, min(1, opacity-fade_out))
+        fade_out = max(
+            0, ((current_time - self.get_hit_time(hitobj)) / self.hitwindow_50)
+        )
+        opacity = min(
+            1,
+            (
+                (current_time - (self.get_hit_time(hitobj) - self.preempt))
+                / self.fade_in
+            ),
+        )
+        opacity = max(0, min(1, opacity - fade_out))
         p = hitobj.position
 
         # the pen width grows outwards and inwards equally (preferring outwards
@@ -807,17 +836,32 @@ class Renderer(QFrame):
         if self.get_hit_endtime(hitobj) - current_time < 0:
             return
         radius = GAMEPLAY_HEIGHT / 2
-        fade_out = max(0, ((current_time - self.get_hit_endtime(hitobj)) / self.hitwindow_50))
-        opacity = min(1, ((current_time - (self.get_hit_time(hitobj) - self.preempt)) / self.fade_in))
-        opacity = max(0, min(1, opacity-fade_out))
-        scale = min(1, (self.get_hit_endtime(hitobj) - current_time) / (self.get_hit_endtime(hitobj) - self.get_hit_time(hitobj)))
+        fade_out = max(
+            0, ((current_time - self.get_hit_endtime(hitobj)) / self.hitwindow_50)
+        )
+        opacity = min(
+            1,
+            (
+                (current_time - (self.get_hit_time(hitobj) - self.preempt))
+                / self.fade_in
+            ),
+        )
+        opacity = max(0, min(1, opacity - fade_out))
+        scale = min(
+            1,
+            (self.get_hit_endtime(hitobj) - current_time)
+            / (self.get_hit_endtime(hitobj) - self.get_hit_time(hitobj)),
+        )
         radius = radius * scale
 
         PEN_WHITE.setWidth(self.scaled_number(WIDTH_CIRCLE_BORDER / 2))
         self.painter.setPen(PEN_WHITE)
         self.painter.setOpacity(opacity)
-        self.painter.drawEllipse(self.scaled_point(GAMEPLAY_WIDTH / 2, GAMEPLAY_HEIGHT / 2),
-            self.scaled_number(radius), self.scaled_number(radius))
+        self.painter.drawEllipse(
+            self.scaled_point(GAMEPLAY_WIDTH / 2, GAMEPLAY_HEIGHT / 2),
+            self.scaled_number(radius),
+            self.scaled_number(radius),
+        )
 
     def draw_approachcircle(self, hitobj):
         """
@@ -828,9 +872,17 @@ class Renderer(QFrame):
         current_time = self.clock.get_time()
         if self.get_hit_time(hitobj) - current_time < 0:
             return
-        opacity = min(1, ((current_time - (self.get_hit_time(hitobj) - self.preempt)) / self.fade_in))
+        opacity = min(
+            1,
+            (
+                (current_time - (self.get_hit_time(hitobj) - self.preempt))
+                / self.fade_in
+            ),
+        )
         opacity = max(0, min(1, opacity))
-        scale = max(1, ((self.get_hit_time(hitobj) - current_time) / self.preempt) * 3 + 1)
+        scale = max(
+            1, ((self.get_hit_time(hitobj) - current_time) / self.preempt) * 3 + 1
+        )
         p = hitobj.position
         r = self.scaled_number(self.hitcircle_radius * scale)
 
@@ -861,9 +913,17 @@ class Renderer(QFrame):
         """
 
         current_time = self.clock.get_time()
-        fade_out = max(0, ((current_time - self.get_hit_endtime(hitobj)) / self.hitwindow_50))
-        opacity = min(1, ((current_time - (self.get_hit_time(hitobj) - self.preempt)) / self.fade_in))
-        opacity = max(0, min(1, opacity-fade_out)) * 0.75
+        fade_out = max(
+            0, ((current_time - self.get_hit_endtime(hitobj)) / self.hitwindow_50)
+        )
+        opacity = min(
+            1,
+            (
+                (current_time - (self.get_hit_time(hitobj) - self.preempt))
+                / self.fade_in
+            ),
+        )
+        opacity = max(0, min(1, opacity - fade_out)) * 0.75
         p = hitobj.position
 
         PEN_GRAY.setWidth(self.scaled_number(self.hitcircle_radius * 2))
@@ -887,8 +947,9 @@ class Renderer(QFrame):
         pen = self.painter.pen()
         pen.setWidth(ERROR_BAR_HIT_WIDTH)
         self.painter.setPen(pen)
-        self.draw_line(1, [mid_x, y - ERROR_BAR_HIT_HEIGHT],
-            [mid_x, y + ERROR_BAR_HIT_HEIGHT])
+        self.draw_line(
+            1, [mid_x, y - ERROR_BAR_HIT_HEIGHT], [mid_x, y + ERROR_BAR_HIT_HEIGHT]
+        )
 
         # draw the three error zones as slightly transparent
         self.painter.setOpacity(0.65)
@@ -1004,12 +1065,11 @@ class Renderer(QFrame):
         _pen.setColor(QColor(c.red(), c.green(), c.blue(), 25))
         self.painter.setPen(_pen)
 
-        loading_bg.moveTo(self.width()/2 - 75, self.height() / 2)
-        loading_bg.lineTo(self.width()/2 - 75 + 150, self.height() / 2)
+        loading_bg.moveTo(self.width() / 2 - 75, self.height() / 2)
+        loading_bg.lineTo(self.width() / 2 - 75 + 150, self.height() / 2)
 
         loading_bar.moveTo(self.width() / 2 - 75, self.height() / 2)
-        loading_bar.lineTo(self.width() / 2 - 75 + percentage * 1.5,
-            self.height() / 2)
+        loading_bar.lineTo(self.width() / 2 - 75 + percentage * 1.5, self.height() / 2)
 
         self.painter.drawPath(loading_bg)
         _pen.setColor(QColor(c.red(), c.green(), c.blue(), 255))
@@ -1027,7 +1087,13 @@ class Renderer(QFrame):
         for i, hitobj in enumerate(self.hit_objects):
             self.sliders_current = i
             if isinstance(hitobj, Slider):
-                steps = max(2, int((self.get_hit_endtime(hitobj) - self.get_hit_time(hitobj)) / SLIDER_TICKRATE))
+                steps = max(
+                    2,
+                    int(
+                        (self.get_hit_endtime(hitobj) - self.get_hit_time(hitobj))
+                        / SLIDER_TICKRATE
+                    ),
+                )
                 # some sliders (see https://osu.ppy.sh/b/1853289 and
                 # https://github.com/circleguard/circleguard/issues/177) set
                 # slider durations of ridiculously long time periods, so
@@ -1199,7 +1265,6 @@ class Renderer(QFrame):
 
         self.hitcircle_radius = hitradius(cs)
 
-
     def raw_view_changed(self, new_state):
         self.raw_view = new_state
         # redraw everything for the new raw view
@@ -1244,6 +1309,7 @@ class Rect:
     A dataclass which mimics ``QRect`` and only serves as a hashable liaison of
     ``QRect``.
     """
+
     x: int
     y: int
     width: int

@@ -14,8 +14,7 @@ with open("circlevis/version.py") as f:
     if match:
         VERSION = match.group(1)
     else:
-        raise RuntimeError("Unable to find version string in "
-            "circlevis/version.py")
+        raise RuntimeError("Unable to find version string in " "circlevis/version.py")
 
 setup(
     name="circlevis",
@@ -28,18 +27,12 @@ setup(
         "Intended Audience :: Developers",
         "Operating System :: OS Independent",
     ],
-    keywords = ["osu!", "python", "Qt"],
+    keywords=["osu!", "python", "Qt"],
     author="Liam DeVoe",
     author_email="orionldevoe@gmail.com",
     url="https://github.com/circleguard/circlevis",
-    download_url = "https://github.com/circleguard/circlevis/tarball/v" + VERSION,
+    download_url="https://github.com/circleguard/circlevis/tarball/v" + VERSION,
     packages=find_packages(),
-    install_requires=[
-        "circleguard >= 5.2.3, <6.0.0",
-        "slider >= 0.4.0",
-        "PyQt6"
-    ],
-    package_data={
-        "circlevis": ["resources/*"]
-    }
+    install_requires=["circleguard >= 5.2.3, <6.0.0", "slider >= 0.4.0", "PyQt6"],
+    package_data={"circlevis": ["resources/*"]},
 )

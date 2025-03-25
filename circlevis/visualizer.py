@@ -6,16 +6,26 @@ from PyQt6.QtCore import Qt, QKeyCombination
 from circlevis.interface import Interface
 from circlevis.palette import get_dark_palette
 
-PREVIOUS_ERRSTATE = np.seterr('raise')
+PREVIOUS_ERRSTATE = np.seterr("raise")
+
 
 class Visualizer(QMainWindow):
     # TODO refactor so users aren't faced with only one entry point with more
     # than a few optional arguments, but multiple different objects with fewer
     # (and more relevant) arguments each. Eg maybe expose Renderer, which would
     # take speeds and start_speed.
-    def __init__(self, beatmap_info, replays=[], events=[], library=None,
+    def __init__(
+        self,
+        beatmap_info,
+        replays=[],
+        events=[],
+        library=None,
         speeds=[0.05, 0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0],
-        start_speed=1, paint_info=True, statistic_functions=[], snaps_args={}):
+        start_speed=1,
+        paint_info=True,
+        statistic_functions=[],
+        snaps_args={},
+    ):
         super().__init__()
 
         self.beatmap_info = beatmap_info
@@ -30,120 +40,98 @@ class Visualizer(QMainWindow):
 
         self.setAutoFillBackground(True)
         self.setWindowTitle("Visualizer")
-        self.interface = Interface(beatmap_info, replays, events, library,
-            speeds, start_speed, paint_info, statistic_functions, snaps_args)
+        self.interface = Interface(
+            beatmap_info,
+            replays,
+            events,
+            library,
+            speeds,
+            start_speed,
+            paint_info,
+            statistic_functions,
+            snaps_args,
+        )
         self.interface.renderer.loaded_signal.connect(self.on_load)
         self.setCentralWidget(self.interface)
 
         QShortcut(
-            QKeySequence(
-                QKeyCombination(Qt.Key.Key_Space)
-            ),
+            QKeySequence(QKeyCombination(Qt.Key.Key_Space)),
             self,
-            self.interface.toggle_pause
+            self.interface.toggle_pause,
         )
         QShortcut(
-            QKeySequence(
-                QKeyCombination(Qt.Key.Key_Right)
-            ),
+            QKeySequence(QKeyCombination(Qt.Key.Key_Right)),
             self,
-            lambda: self.interface.change_frame(reverse=False)
+            lambda: self.interface.change_frame(reverse=False),
         )
         QShortcut(
-            QKeySequence(
-                QKeyCombination(Qt.Key.Key_Left)
-            ),
+            QKeySequence(QKeyCombination(Qt.Key.Key_Left)),
             self,
-            lambda: self.interface.change_frame(reverse=True)
+            lambda: self.interface.change_frame(reverse=True),
         )
         QShortcut(
-            QKeySequence(
-                QKeyCombination(Qt.Modifier.CTRL, Qt.Key.Key_Right)
-            ),
+            QKeySequence(QKeyCombination(Qt.Modifier.CTRL, Qt.Key.Key_Right)),
             self,
-            self.interface.play_normal
+            self.interface.play_normal,
         )
         QShortcut(
-            QKeySequence(
-                QKeyCombination(Qt.Modifier.CTRL, Qt.Key.Key_Left)
-            ),
+            QKeySequence(QKeyCombination(Qt.Modifier.CTRL, Qt.Key.Key_Left)),
             self,
-            self.interface.play_reverse
+            self.interface.play_reverse,
         )
         QShortcut(
-            QKeySequence(
-                QKeyCombination(Qt.Key.Key_Up)
-            ),
+            QKeySequence(QKeyCombination(Qt.Key.Key_Up)),
             self,
-            self.interface.increase_speed
+            self.interface.increase_speed,
         )
         QShortcut(
-            QKeySequence(
-                QKeyCombination(Qt.Key.Key_Down)
-            ),
+            QKeySequence(QKeyCombination(Qt.Key.Key_Down)),
             self,
-            self.interface.lower_speed
+            self.interface.lower_speed,
         )
         QShortcut(
-            QKeySequence(
-                QKeyCombination(Qt.Modifier.CTRL, Qt.Key.Key_F11)
-            ),
+            QKeySequence(QKeyCombination(Qt.Modifier.CTRL, Qt.Key.Key_F11)),
             self,
-            self.interface.renderer.toggle_frametime
+            self.interface.renderer.toggle_frametime,
+        )
+        QShortcut(QKeySequence.StandardKey.FullScreen, self, self.toggle_fullscreen)
+        QShortcut(
+            QKeySequence(QKeyCombination(Qt.Key.Key_F)), self, self.toggle_fullscreen
         )
         QShortcut(
-            QKeySequence.StandardKey.FullScreen,
+            QKeySequence(QKeyCombination(Qt.Modifier.ALT, Qt.Key.Key_Return)),
             self,
-            self.toggle_fullscreen
+            self.toggle_fullscreen,
         )
         QShortcut(
-            QKeySequence(
-                QKeyCombination(Qt.Key.Key_F)
-            ),
+            QKeySequence(QKeyCombination(Qt.Key.Key_Escape)), self, self.exit_fullscreen
+        )
+        QShortcut(QKeySequence.StandardKey.Paste, self, self.seek_to_paste_contents)
+        QShortcut(
+            QKeySequence(QKeyCombination(Qt.Key.Key_Period)),
             self,
-            self.toggle_fullscreen
+            lambda: self.interface.change_by(1),
         )
         QShortcut(
-            QKeySequence(
-                QKeyCombination(Qt.Modifier.ALT, Qt.Key.Key_Return)
-            ),
+            QKeySequence(QKeyCombination(Qt.Key.Key_Comma)),
             self,
-            self.toggle_fullscreen
-        )
-        QShortcut(
-            QKeySequence(
-                QKeyCombination(Qt.Key.Key_Escape)
-            ),
-            self,
-            self.exit_fullscreen
-        )
-        QShortcut(
-            QKeySequence.StandardKey.Paste,
-            self,
-            self.seek_to_paste_contents
-        )
-        QShortcut(
-            QKeySequence(
-                QKeyCombination(Qt.Key.Key_Period)
-            ),
-            self,
-            lambda: self.interface.change_by(1)
-        )
-        QShortcut(
-            QKeySequence(
-                QKeyCombination(Qt.Key.Key_Comma)
-            ),
-            self,
-            lambda: self.interface.change_by(-1)
+            lambda: self.interface.change_by(-1),
         )
 
         # ugly hack to make the window 20% larger, we can't change gameplay
         # height because that's baked in as the osu! gameplay height and is
         # not meant to be changed to increase the window size (same with width).
-        from .renderer import (GAMEPLAY_WIDTH, GAMEPLAY_HEIGHT,
-            GAMEPLAY_PADDING_WIDTH, GAMEPLAY_PADDING_HEIGHT)
-        self.resize(int((GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH * 2) * 1.2),
-                    int((GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT * 2) * 1.2))
+        from .renderer import (
+            GAMEPLAY_WIDTH,
+            GAMEPLAY_HEIGHT,
+            GAMEPLAY_PADDING_WIDTH,
+            GAMEPLAY_PADDING_HEIGHT,
+        )
+
+        self.resize(
+            int((GAMEPLAY_WIDTH + GAMEPLAY_PADDING_WIDTH * 2) * 1.2),
+            int((GAMEPLAY_HEIGHT + GAMEPLAY_PADDING_HEIGHT * 2) * 1.2),
+        )
 
     def closeEvent(self, event):
         super().closeEvent(event)
@@ -198,13 +186,24 @@ class Visualizer(QMainWindow):
     force_pause = pause
     force_unpause = unpause
 
+
 class VisualizerApp(QApplication):
     """
     ``speeds`` must contain ``start_speed``, ``1``, ``0.75``, and ``1.5``.
     """
-    def __init__(self, beatmap_info, replays=[], events=[], library=None,
+
+    def __init__(
+        self,
+        beatmap_info,
+        replays=[],
+        events=[],
+        library=None,
         speeds=[0.05, 0.1, 0.25, 0.5, 0.75, 1.0, 1.5, 3.0, 5.0, 10.0],
-        start_speed=1, paint_info=True, statistic_functions=[], snaps_args={}):
+        start_speed=1,
+        paint_info=True,
+        statistic_functions=[],
+        snaps_args={},
+    ):
         super().__init__([])
         self.setStyle("Fusion")
         self.setApplicationName("Circlevis")
@@ -232,9 +231,17 @@ class VisualizerApp(QApplication):
         # we can't create this in ``__init__`` because we can't instantiate a
         # ``QWidget`` before a ``QApplication``, so delay until here, which is
         # all it's necessary for.
-        self.visualizer = Visualizer(self.beatmap_info, self.replays,
-            self.events, self.library, self.speeds, self.start_speed,
-            self.paint_info, self.statistic_functions, self.snaps_args)
+        self.visualizer = Visualizer(
+            self.beatmap_info,
+            self.replays,
+            self.events,
+            self.library,
+            self.speeds,
+            self.start_speed,
+            self.paint_info,
+            self.statistic_functions,
+            self.snaps_args,
+        )
         self.visualizer.interface.renderer.loaded_signal.connect(self.on_load)
         self.visualizer.show()
         super().exec()

@@ -1,7 +1,14 @@
 from functools import partial
 
-from PyQt6.QtWidgets import (QLabel, QVBoxLayout, QFrame, QAbstractItemView,
-    QTableWidget, QTableWidgetItem, QGridLayout)
+from PyQt6.QtWidgets import (
+    QLabel,
+    QVBoxLayout,
+    QFrame,
+    QAbstractItemView,
+    QTableWidget,
+    QTableWidgetItem,
+    QGridLayout,
+)
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QCursor
 from circleguard import KeylessCircleguard, JudgmentType, convert_statistic
@@ -21,8 +28,16 @@ class ReplayInfo(QFrame):
     # in pixels
     EDGE_HIT_THRESH = 3
 
-    def __init__(self, replay, slider_dir, ur=None, frametime=None, \
-        snaps=None, judgments=None, snaps_args={}):
+    def __init__(
+        self,
+        replay,
+        slider_dir,
+        ur=None,
+        frametime=None,
+        snaps=None,
+        judgments=None,
+        snaps_args={},
+    ):
         """
         If passed, the `ur`, `frametime`, `snaps`, and
         `hits` parameters will be used instead of recalculating them from
@@ -42,14 +57,14 @@ class ReplayInfo(QFrame):
 
         mods = replay.mods.short_name()
 
-        info_label = QLabel("<a href=\"https://osu.ppy.sh/scores/osu/"
-            f"{replay.replay_id}\">{replay.username} +{mods}</a> "
+        info_label = QLabel(
+            '<a href="https://osu.ppy.sh/scores/osu/'
+            f'{replay.replay_id}">{replay.username} +{mods}</a> '
             "on map "
-            f"<a href=\"https://osu.ppy.sh/b/{replay.map_id}\">{replay.map_id}"
-            "</a>")
-        info_label.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse
+            f'<a href="https://osu.ppy.sh/b/{replay.map_id}">{replay.map_id}'
+            "</a>"
         )
+        info_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         info_label.setTextInteractionFlags(
             Qt.TextInteractionFlag.TextBrowserInteraction
         )
@@ -60,29 +75,27 @@ class ReplayInfo(QFrame):
             ur = ur or circleguard.ur(replay)
             ucv_ur = round(convert_statistic(ur, replay.mods, to="ucv"), 2)
             ur = round(ur, 2)
-            ur = self.maybe_highlight(ur, self.UR_YELLOW_THRESH,
-                self.UR_RED_THRESH)
+            ur = self.maybe_highlight(ur, self.UR_YELLOW_THRESH, self.UR_RED_THRESH)
             # highlight ucvUR in the same way as ur or the user will get
             # confused (ie these should always be the same color)
-            yellow_thresh = convert_statistic(self.UR_YELLOW_THRESH,
-                replay.mods, to="ucv")
-            red_thresh = convert_statistic(self.UR_RED_THRESH, replay.mods,
-                to="ucv")
+            yellow_thresh = convert_statistic(
+                self.UR_YELLOW_THRESH, replay.mods, to="ucv"
+            )
+            red_thresh = convert_statistic(self.UR_RED_THRESH, replay.mods, to="ucv")
             ucv_ur = self.maybe_highlight(ucv_ur, yellow_thresh, red_thresh)
         else:
             ur = "Unknown"
             ucv_ur = "Unkown"
 
         ur_label = QLabel(f"<b>cvUR:</b> {ur} ({ucv_ur} ucv)")
-        ur_label.setTextInteractionFlags(
-            Qt.TextInteractionFlag.TextSelectableByMouse
-        )
+        ur_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
         ur_label.setCursor(QCursor(Qt.CursorShape.IBeamCursor))
 
         frametime = frametime or circleguard.frametime(replay)
         frametime = round(frametime, 2)
-        frametime = self.maybe_highlight(frametime,
-            self.FRAMETIME_YELLOW_THRESH, self.FRAMETIME_RED_THRESH)
+        frametime = self.maybe_highlight(
+            frametime, self.FRAMETIME_YELLOW_THRESH, self.FRAMETIME_RED_THRESH
+        )
         frametime_label = QLabel(f"<b>cv frametime:</b> {frametime}")
         frametime_label.setTextInteractionFlags(
             Qt.TextInteractionFlag.TextSelectableByMouse
@@ -92,16 +105,32 @@ class ReplayInfo(QFrame):
         events_label = QLabel("Events Table")
 
         self.table_filters_popup = EventsTableFilters(self)
-        self.table_filters_popup.edge_hit_filter_signal.connect(partial(self.toggle_filter_item, EdgeHitEvent))
-        self.table_filters_popup.snaps_filter_signal.connect(partial(self.toggle_filter_item, SnapEvent))
-        self.table_filters_popup.misses_filter_signal.connect(partial(self.toggle_filter_item, MissEvent))
-        self.table_filters_popup.hit_100_filter_signal.connect(partial(self.toggle_filter_item, Hit100Event))
-        self.table_filters_popup.hit_50_filter_signal.connect(partial(self.toggle_filter_item, Hit50Event))
+        self.table_filters_popup.edge_hit_filter_signal.connect(
+            partial(self.toggle_filter_item, EdgeHitEvent)
+        )
+        self.table_filters_popup.snaps_filter_signal.connect(
+            partial(self.toggle_filter_item, SnapEvent)
+        )
+        self.table_filters_popup.misses_filter_signal.connect(
+            partial(self.toggle_filter_item, MissEvent)
+        )
+        self.table_filters_popup.hit_100_filter_signal.connect(
+            partial(self.toggle_filter_item, Hit100Event)
+        )
+        self.table_filters_popup.hit_50_filter_signal.connect(
+            partial(self.toggle_filter_item, Hit50Event)
+        )
 
         self.events_filter_button = PushButton("Filter Events")
         self.events_filter_button.clicked.connect(self.show_filters)
 
-        self.active_filters = [EdgeHitEvent, SnapEvent, MissEvent, Hit100Event, Hit50Event]
+        self.active_filters = [
+            EdgeHitEvent,
+            SnapEvent,
+            MissEvent,
+            Hit100Event,
+            Hit50Event,
+        ]
 
         self.events = []
         snaps = snaps or circleguard.snaps(replay, **snaps_args)
@@ -138,8 +167,11 @@ class ReplayInfo(QFrame):
         close_button.setMaximumWidth(80)
         # don't let ourselves get a horizontal scrollbar on the table by being
         # too small, + 60 to account for the vertical scrollbar I think?
-        self.setMinimumWidth(self.events_table.horizontalHeader().length() +
-            self.events_table.verticalHeader().width() + 60)
+        self.setMinimumWidth(
+            self.events_table.horizontalHeader().length()
+            + self.events_table.verticalHeader().width()
+            + 60
+        )
 
         self.events_label_frame = QFrame()
         events_label_layout = QGridLayout()
@@ -147,7 +179,6 @@ class ReplayInfo(QFrame):
         events_label_layout.addWidget(events_label, 0, 0, 1, 1)
         events_label_layout.addWidget(self.events_filter_button, 0, 1, 1, 1)
         self.events_label_frame.setLayout(events_label_layout)
-
 
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
@@ -185,7 +216,8 @@ class ReplayInfo(QFrame):
         self.table_filters_popup.setGeometry(
             int(global_pos.x()),
             int(global_pos.y() + (popup_height / 2) + 16),
-            popup_width, popup_height
+            popup_width,
+            popup_height,
         )
 
     def toggle_filter_item(self, filter_item):
@@ -208,21 +240,26 @@ class Event:
         self.label = label
         self.time = time
 
+
 class SnapEvent(Event):
     def __init__(self, snap):
         super().__init__("snap", snap.time)
+
 
 class EdgeHitEvent(Event):
     def __init__(self, judgment):
         super().__init__("edge hit", judgment.time)
 
+
 class MissEvent(Event):
     def __init__(self, judgment):
         super().__init__("miss", judgment.hitobject.time)
 
+
 class Hit100Event(Event):
     def __init__(self, judgment):
         super().__init__("100", judgment.time)
+
 
 class Hit50Event(Event):
     def __init__(self, judgment):
@@ -230,7 +267,7 @@ class Hit50Event(Event):
 
 
 class EventsTable(QTableWidget):
-    jump_button_clicked = pyqtSignal(int) # time (ms)
+    jump_button_clicked = pyqtSignal(int)  # time (ms)
 
     def __init__(self, events):
         super().__init__()
@@ -282,7 +319,8 @@ class EventsTable(QTableWidget):
             button_widget.setLayout(layout)
 
             jump_to_button.clicked.connect(
-                partial(self.jump_button_clicked.emit, event.time))
+                partial(self.jump_button_clicked.emit, event.time)
+            )
             self.setCellWidget(i, 2, button_widget)
 
     # def resizeEvent(self, event):
@@ -290,6 +328,7 @@ class EventsTable(QTableWidget):
     #     self.setColumnWidth(0, self.width() / 3 - 20)
     #     self.setColumnWidth(1, self.width() / 3 - 20)
     #     self.setColumnWidth(2, self.width() / 3 - 20)
+
 
 class EventsTableFilters(QFrame):
     edge_hit_filter_signal = pyqtSignal(bool)

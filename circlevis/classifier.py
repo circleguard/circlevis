@@ -18,6 +18,7 @@ class ClassifierHotkey:
     A hotkey for use in a ``Classifier``. Listens for ``keys`` and calls
     ``callback`` when the hotkey is pressed.
     """
+
     keys: Type[Qt.Key]
     callback: Callable[[Replay], None]
 
@@ -38,6 +39,7 @@ class Classifier:
     button, and have your function call ``self.next_replay`` to show the next
     replay in order to you.
     """
+
     def __init__(self, replays, cg, hotkeys):
         self.app = QApplication([])
         self.app.setStyle("Fusion")
@@ -76,8 +78,9 @@ class Classifier:
 
         self.vis = self.visualizer(bm, replay)
         for hotkey in self.hotkeys:
-            QShortcut(QKeySequence(hotkey.keys), self.vis,
-                partial(hotkey.callback, replay))
+            QShortcut(
+                QKeySequence(hotkey.keys), self.vis, partial(hotkey.callback, replay)
+            )
         self.vis.show()
 
     def visualizer(self, bm, replay):

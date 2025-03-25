@@ -1,14 +1,25 @@
-from PyQt6.QtWidgets import (QFrame, QPushButton, QSlider, QLabel, QCheckBox,
-    QHBoxLayout, QSpinBox, QComboBox, QStyle)
+from PyQt6.QtWidgets import (
+    QFrame,
+    QPushButton,
+    QSlider,
+    QLabel,
+    QCheckBox,
+    QHBoxLayout,
+    QSpinBox,
+    QComboBox,
+    QStyle,
+)
 from PyQt6.QtGui import QCursor, QColor, QPalette
 from PyQt6.QtCore import Qt, pyqtSignal
 
 # we want most of our clickable widgets to have a pointing hand cursor on hover
 
+
 class PushButton(QPushButton):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+
 
 # TODO set pointer cursor on combobox popup list as well, I tried
 # https://stackoverflow.com/a/44525625/12164878 but couldn't get it to work
@@ -23,6 +34,7 @@ class ComboBox(QComboBox):
     def wheelEvent(self, event):
         # we never want wheel events to scroll the combobox
         event.ignore()
+
 
 class CheckBox(QCheckBox):
     def __init__(self, *args, **kwargs):
@@ -136,13 +148,18 @@ class JumpSlider(QSlider):
         # for the slider bar, so we need to override that locally here to
         # keep the nice blue accent color even when the app is in the
         # background.
-        p.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight,
-            accent)
+        p.setColor(QPalette.ColorGroup.Inactive, QPalette.ColorRole.Highlight, accent)
         self.setPalette(p)
 
     def mousePressEvent(self, event):
-        self.setValue(QStyle.sliderValueFromPosition(self.minimum(),
-            self.maximum(), event.position().toPoint().x(), self.width()))
+        self.setValue(
+            QStyle.sliderValueFromPosition(
+                self.minimum(),
+                self.maximum(),
+                event.position().toPoint().x(),
+                self.width(),
+            )
+        )
         # our code relies on `sliderMoved` in order to only trigger on user
         # input and not when we change the slider's value from the code (we
         # update the slider's value every frame as we progress along the
@@ -154,6 +171,12 @@ class JumpSlider(QSlider):
         self.sliderMoved.emit(self.value())
 
     def mouseMoveEvent(self, event):
-        self.setValue(QStyle.sliderValueFromPosition(self.minimum(),
-            self.maximum(), event.position().toPoint().x(), self.width()))
+        self.setValue(
+            QStyle.sliderValueFromPosition(
+                self.minimum(),
+                self.maximum(),
+                event.position().toPoint().x(),
+                self.width(),
+            )
+        )
         self.sliderMoved.emit(self.value())

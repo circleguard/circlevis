@@ -14,7 +14,7 @@ class Timer:
         if not self.paused:
             current_run_time = time.perf_counter_ns()
             time_took = current_run_time - self.last_run_time
-            self.time_counter += time_took / 10 ** 6 * self.current_speed
+            self.time_counter += time_took / 10**6 * self.current_speed
             self.last_run_time = current_run_time
         return self.time_counter
 
